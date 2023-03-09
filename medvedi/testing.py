@@ -1,3 +1,5 @@
+from typing import Hashable
+
 import numpy as np
 from numpy.testing import assert_array_equal
 
@@ -12,7 +14,7 @@ def assert_frame_equal(df1: DataFrame, df2: DataFrame) -> None:
         _assert_array_equal(df1[k], df2[k], k)
 
 
-def _assert_array_equal(v1: np.ndarray, v2: np.ndarray, path: str) -> None:
+def _assert_array_equal(v1: np.ndarray, v2: np.ndarray, path: Hashable) -> None:
     if v1.dtype == object or v2.dtype == object:
         assert v1.dtype == v2.dtype, path
         assert v1.shape == v2.shape, path
@@ -26,4 +28,4 @@ def _assert_array_equal(v1: np.ndarray, v2: np.ndarray, path: str) -> None:
             else:
                 assert vi1 == vi2, f"{path}[{i}]"
     else:
-        assert_array_equal(v1, v2, err_msg=path)
+        assert_array_equal(v1, v2, err_msg=str(path))
