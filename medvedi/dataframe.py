@@ -432,7 +432,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
     def in_(
         self,
         column: Hashable,
-        haystack: np.ndarray,
+        haystack: npt.ArrayLike,
         assume_unique: bool = False,
         invert: bool = False,
     ) -> npt.NDArray[np.bool_]:
@@ -447,6 +447,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         :return: Boolean mask, same shape as `column`.
         """
         values = self[column]
+        haystack = np.asarray(haystack)
         if values.dtype != haystack.dtype:
             raise ValueError(f"dtypes mismatch: {values.dtype} vs. {haystack.dtype}")
         kind = values.dtype.kind
@@ -485,10 +486,10 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             return is_null(values)
         kind = values.dtype.kind
         if kind == "m" or kind == "M" or kind == "f":
-            return values == values
+            return values != values
         return np.zeros(len(values), dtype=bool)
 
-    def nolnull(self, column: Hashable) -> npt.NDArray[np.bool_]:
+    def notnull(self, column: Hashable) -> npt.NDArray[np.bool_]:
         """
         Calculate the boolean mask indicating whether each element of `column` is not null.
 
@@ -501,7 +502,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             return is_not_null(values)
         kind = values.dtype.kind
         if kind == "m" or kind == "M" or kind == "f":
-            return values != values
+            return values == values
         return np.ones(len(values), dtype=bool)
 
     def serialize_unsafe(self, alloc: object | None = None) -> bytes:
