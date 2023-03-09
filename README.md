@@ -1,2 +1,3 @@
-# medvedi
-Memory Efficient Deconstructed Vectorized Dataframe Interface
+# MEDVeDI
+
+Memory Efficient Deconstructed Vectorized Dataframe Interface.

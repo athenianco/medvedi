@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools!=60.6.0,!=64.0.0", "wheel", "Cython>=0.29.30", "numpy==1.23.4"]
+
+[tool.isort]
+profile = "black"
+combine_as_imports = true
+force_sort_within_sections = true
+line_length = 99
+
+[tool.black]
+line-length = 99
+preview = true
+
+[tool.mypy]
+ignore_missing_imports = true
+exclude = ["build", "setup.py"]
+
+[tool.flake8]
+ignore = [
+    "SFS101", "SFS301", "D100", "D104", "D301", "W503", "W504", "E203", "B023", "B024",
+    "A002", "A003", "PIE781", "PIE786", "PIE787", "PIE793", "PIE798", "PIE806", "F722",
+]
+per-file-ignores = [
+    "medvedi/tests/*:D,B008",
+    "medvedi/__init__.py:F401",
+]
+max-line-length = 99
+inline-quotes = '"'
