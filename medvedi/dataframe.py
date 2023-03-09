@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from itertools import repeat
-from typing import Any, Iterable, Literal, Mapping
+from typing import Any, Hashable, Iterable, Literal, Mapping, Sequence
 
 import numpy as np
 from numpy import typing as npt
@@ -30,7 +30,7 @@ class Index:
         return len(self._parent)
 
     @property
-    def names(self) -> tuple[Any, ...]:
+    def names(self) -> tuple[Hashable, ...]:
         """Return the column keys that form the index."""
         return self._parent._index
 
@@ -113,7 +113,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
     def __init__(
         self,
         data: Any = None,
-        columns: Iterable[Any] | None = None,
+        columns: Iterable[Hashable] | None = None,
         index: Any = None,
         copy: bool = False,
         check: bool = True,
@@ -147,11 +147,11 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                 if name is None:
                     name = str(i)
                 built_columns[name] = np.array(arr, copy=copy)
-        self._columns: dict[Any, np.ndarray] = built_columns
+        self._columns: dict[Hashable, np.ndarray] = built_columns
         if check:
             self._check_columns(built_columns)
 
-        self._index: tuple[Any, ...] = ()
+        self._index: tuple[Hashable, ...] = ()
         if isinstance(index, Index):
             index = index.levels()
         if index is not None and index != ():
@@ -163,7 +163,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             return 0
         return len(next(iter(self._columns.values())))
 
-    def __getitem__(self, item: Any) -> np.ndarray:
+    def __getitem__(self, item: Hashable) -> np.ndarray:
         """
         Extract the column values by key. Raise `KeyError` if the column doesn't exist.
 
@@ -172,7 +172,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         """
         return self._columns[item]
 
-    def __setitem__(self, key: Any, value: npt.ArrayLike) -> None:
+    def __setitem__(self, key: Hashable, value: npt.ArrayLike) -> None:
         """
         Add or replace a column.
 
@@ -187,7 +187,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             raise ValueError(f"new column must have the same length {len(self)}, got {len(value)}")
         self._columns[key] = value
 
-    def __delitem__(self, key: Any) -> None:
+    def __delitem__(self, key: Hashable) -> None:
         """
         Delete a column. If the column doesn't exist, raise `KeyError`.
 
@@ -195,7 +195,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         """
         del self._columns[key]
 
-    def __contains__(self, item: Any) -> bool:
+    def __contains__(self, item: Hashable) -> bool:
         """Check whether the column key is present."""
         return item in self._columns
 
@@ -224,7 +224,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             return True
         return len(next(iter(self._columns.values()))) == 0
 
-    def iterrows(self, *columns: Any) -> zip:
+    def iterrows(self, *columns: Hashable) -> zip:
         """
         Iterate column values.
 
@@ -253,13 +253,13 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         return Index(self)
 
     @property
-    def columns(self) -> tuple[Any, ...]:
+    def columns(self) -> tuple[Hashable, ...]:
         """Return the column keys."""
         return tuple(self._columns)
 
     def sort_values(
         self,
-        by: Any,
+        by: Hashable | list[Hashable],
         *,
         ascending: bool = True,
         inplace: bool = False,
@@ -291,9 +291,13 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
 
         if not isinstance(by, (tuple, list)):
             by = (by,)
-        by = [self[c] for c in by]
 
-        order, _ = self._order(by, kind, strict=not non_negative_hint, na_position=na_position)
+        order, _ = self._order(
+            [self[c] for c in by],
+            kind,
+            strict=not non_negative_hint,
+            na_position=na_position,
+        )
         if not ascending:
             order = order[::-1]
 
@@ -374,7 +378,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
 
     def drop_duplicates(
         self,
-        subset: Iterable[Any],
+        subset: Iterable[Hashable],
         keep: Literal["first", "last"] = "first",
         inplace: bool = False,
         ignore_index=False,
@@ -401,7 +405,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             return df.take(first_found)
         return df
 
-    def groupby(self, *by: Any) -> Grouper:
+    def groupby(self, *by: Hashable) -> Grouper:
         """
         Group rows by one or more columns in `by`.
 
@@ -427,7 +431,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
 
     def in_(
         self,
-        column: Any,
+        column: Hashable,
         haystack: np.ndarray,
         assume_unique: bool = False,
         invert: bool = False,
@@ -453,7 +457,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             return mask
         return np.in1d(values, haystack, assume_unique=assume_unique, invert=invert)
 
-    def unique(self, column: Any, unordered: bool = False) -> np.ndarray:
+    def unique(self, column: Hashable, unordered: bool = False) -> np.ndarray:
         """
         Return the unique elements of `column`.
 
@@ -468,7 +472,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                 pass
         return np.unique(values)
 
-    def isnull(self, column: Any) -> npt.NDArray[np.bool_]:
+    def isnull(self, column: Hashable) -> npt.NDArray[np.bool_]:
         """
         Calculate the boolean mask indicating whether each element of `column` is null.
 
@@ -484,7 +488,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             return values == values
         return np.zeros(len(values), dtype=bool)
 
-    def nolnull(self, column: Any) -> npt.NDArray[np.bool_]:
+    def nolnull(self, column: Hashable) -> npt.NDArray[np.bool_]:
         """
         Calculate the boolean mask indicating whether each element of `column` is not null.
 
@@ -654,7 +658,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                 if c in df._index:
                     continue
                 if suffix is not None and c in joined_columns:
-                    c += suffix
+                    c = str(c) + suffix
                 joined_columns[c] = joined_values = cls._empty_array(len(index_map), values.dtype)
                 if must_mask:
                     values = values[mask]
@@ -666,7 +670,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
 
     @staticmethod
     def _order(
-        by: Any,
+        by: Sequence[np.ndarray],
         kind: Literal["quicksort", "stable"] | None = None,
         strict: bool = False,
         na_position: Literal["first", "last"] = "last",
@@ -700,7 +704,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         return np.zeros(length, dtype=dtype)
 
     @staticmethod
-    def _check_columns(columns: dict[Any, np.ndarray]) -> None:
+    def _check_columns(columns: dict[Hashable, np.ndarray]) -> None:
         length = None
         for k, v in columns.items():
             if not isinstance(v, np.ndarray):
