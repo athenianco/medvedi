@@ -8,10 +8,12 @@ Design goals:
 - Ensure ideal micro-performance and optimize for moderate data sizes (megabytes).
 - The use-case is API server code that you write once and execute many times.
 - Try to stay compatible with the Pandas interface.
+- Rely on numpy.
 - Frequently release GIL and depend on native extensions doing unsafe things.
 - Test only CPython and Linux.
 - Support only x86-64 CPUs with AVX2.
-- Support only fresh Python versions.
+- Support only Python 3.10+.
+- 100% test coverage.
 - Be opinionated. Reject extra features.
 
 Unless you know what you miss, you should be better with regular Pandas.

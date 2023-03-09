@@ -19,11 +19,10 @@ from medvedi.pure_static import PureStaticDataFrameMethods
 class Index:
     """DataFrame multi-level index."""
 
-    __slots__ = ("_columns", "_parent", "__weakref__")
+    __slots__ = ("_parent",)
 
     def __init__(self, parent: "DataFrame"):
         """Initialize a new instance of `Index` class."""
-        self._columns = parent._index
         self._parent = parent
 
     def __len__(self) -> int:
@@ -33,7 +32,7 @@ class Index:
     @property
     def names(self) -> tuple[Any, ...]:
         """Return the column keys that form the index."""
-        return self._columns
+        return self._parent._index
 
     def get_level_values(self, n: int) -> np.ndarray:
         """
@@ -42,9 +41,15 @@ class Index:
         :param n: Index level number, 0-based.
         :return: Numpy array with the referenced column values.
         """
-        if n >= len(self._columns):
-            raise IndexError(f"Level out of range: {n} >= {len(self._columns)}")
-        return self._parent[self._columns[n]]
+        columns = self._parent._index
+        if n >= len(columns):
+            raise IndexError(f"Level out of range: {n} >= {len(columns)}")
+        return self._parent[columns[n]]
+
+    def levels(self) -> tuple[np.ndarray, ...]:
+        """Return all the index levels as numpy arrays."""
+        parent = self._parent
+        return tuple(parent[c] for c in self._parent._index)
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,7 +109,6 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
     """
 
     __slots__ = ("_columns", "_index", "__weakref__")
-    _default_index_key = (object(),)
 
     def __init__(
         self,
@@ -149,7 +153,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
 
         self._index: tuple[Any, ...] = ()
         if isinstance(index, Index):
-            index = index.names
+            index = index.levels()
         if index is not None and index != ():
             self.set_index(index, inplace=True)
 
@@ -190,6 +194,10 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         :param key: Column key to delete.
         """
         del self._columns[key]
+
+    def __contains__(self, item: Any) -> bool:
+        """Check whether the column key is present."""
+        return item in self._columns
 
     def __str__(self) -> str:
         """Support str()."""
@@ -275,8 +283,8 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         df = self.copy() if not inplace else self
 
         if not ignore_index and df._index == ():
-            df[self._default_index_key[0]] = np.arange(len(self), dtype=int)
-            df._index = self._default_index_key
+            df["_index0"] = np.arange(len(self), dtype=int)
+            df._index = ("_index0",)
 
         if not isinstance(by, tuple):
             by = (by,)
@@ -309,14 +317,32 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
 
         if isinstance(index, (np.ndarray, list)):
             index = np.asarray(index)
-            df._index = df._default_index_key
+            if "_index0" in df:
+                raise ValueError('Cannot set an unnamed index "_index0": column already exists')
+            df._index = ("_index0",)
             df[df._index[0]] = index
         else:
-            if index not in self._columns:
-                raise KeyError(
-                    f"index '{index}' must be one of the existing columns {list(self._columns)}",
-                )
-            df._index = index
+            if not isinstance(index, tuple):
+                index = (index,)
+            if isinstance(index[0], (list, np.ndarray)):
+                index_names = []
+                for i, level in enumerate(index):
+                    name = f"_index{i}"
+                    if name in df:
+                        raise ValueError(
+                            f'Cannot set an unnamed index "{name}": column already exists',
+                        )
+                    df[name] = np.asarray(level)
+                    index_names.append(name)
+                df._index = tuple(index_names)
+            else:
+                for c in index:
+                    if c not in self._columns:
+                        raise KeyError(
+                            f"index '{c}' must be one of the existing columns "
+                            f"{list(self._columns)}",
+                        )
+                df._index = index
 
         if old_index != () and drop:
             new_index = df._index
@@ -472,7 +498,11 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         return np.ones(len(values), dtype=bool)
 
     def serialize_unsafe(self, alloc: object | None = None) -> bytes:
-        """Constrained serialization, doesn't work for arbitrary object columns."""
+        """
+        Constrained serialization, doesn't work for arbitrary object columns.
+
+        The binary format is unstable and is only suitable for short-term caching.
+        """
         return serialize_df(self, alloc)
 
     @classmethod
