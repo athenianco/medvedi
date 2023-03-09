@@ -812,7 +812,8 @@ def deserialize_df(bytes buffer):
                     input += aux
                     input_size -= aux
 
-    assert input_size == 0, f"{input_size} bytes left in the input"
+    if input_size != 0:
+        raise CorruptedBuffer(f"{input_size} bytes left in the input")
     assert (input - origin) == origin_size
     df = cls()
     df._columns = columns
