@@ -264,8 +264,9 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         ascending: bool = True,
         inplace: bool = False,
         kind: Literal["quicksort", "stable"] | None = None,
-        na_position: str = "last",
+        na_position: Literal["first", "last"] = "last",
         ignore_index: bool = False,
+        non_negative_hint: bool = False,
     ) -> "DataFrame":
         """
         Order the DataFrame by values of one or more columns defined by `by`.
@@ -277,8 +278,10 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                         returning a copy.
         :param kind: Sorting algorithm.
         :param na_position: Where we must place the nulls (NaNs, NaTs, etc.).
-        :param ignore_index:
-        :return: Value indicating whether the index in the resulting DataFrame will be reset.
+        :param ignore_index: Value indicating whether the index in the resulting DataFrame will \
+                             be reset.
+        :param non_negative_hint: The column values referenced by `by` are all non-negative. \
+                                  This enables low-level optimization in multi-column mode.
         """
         df = self.copy() if not inplace else self
 
@@ -286,12 +289,12 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             df["_index0"] = np.arange(len(self), dtype=int)
             df._index = ("_index0",)
 
-        if not isinstance(by, tuple):
+        if not isinstance(by, (tuple, list)):
             by = (by,)
         by = [self[c] for c in by]
 
-        order, _ = self._order(by, kind)
-        if ascending:
+        order, _ = self._order(by, kind, strict=not non_negative_hint, na_position=na_position)
+        if not ascending:
             order = order[::-1]
 
         for k, v in df._columns.items():
@@ -665,13 +668,25 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
     def _order(
         by: Any,
         kind: Literal["quicksort", "stable"] | None = None,
+        strict: bool = False,
+        na_position: Literal["first", "last"] = "last",
     ) -> tuple[npt.NDArray[np.int_], np.ndarray]:
         if len(by) == 1:
-            return np.argsort(by[0], kind=kind), by[0]
-        if not ({c.dtype.kind for c in by} - mergeable_dtype_kinds):
+            result = np.argsort(by[0], kind=kind)
+            if na_position == "first":
+                if (na_count := (by[0] != by[0]).sum()) > 0:
+                    result = np.concatenate([result[-na_count:], result[:-na_count]])
+            return result, by[0]
+        if not strict and not ({c.dtype.kind for c in by} - mergeable_dtype_kinds):
             merged = merge_to_str(*by)
             return np.argsort(merged, kind=kind), merged
-        mapped_bys = [np.unique(c, return_inverse=True)[1] for c in by]
+        mapped_bys = []
+        for c in by:
+            unique_values, inverse_indexes = np.unique(c, return_inverse=True)
+            if na_position == "first" and unique_values[-1] != unique_values[-1]:
+                inverse_indexes += 1
+                inverse_indexes[inverse_indexes == len(unique_values)] = 0
+            mapped_bys.append(inverse_indexes)
         merged = merge_to_str(*mapped_bys)
         return np.argsort(merged, kind=kind), merged
 
