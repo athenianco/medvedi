@@ -1,0 +1,98 @@
+name: Push
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  PIP_CACHE: |
+    ~/.cache/pip
+    ~/.local/bin
+    ~/.local/lib/python3.*/site-packages
+  MIMALLOC_CACHE: |
+    medvedi/libmimalloc.so*
+    medvedi/mimalloc.h
+
+jobs:
+  static_checks:
+    name: Static checks
+    if: "!contains(github.event.head_commit.message, 'Bump version') || github.event_name != 'push'"
+    runs-on: ubuntu-22.04
+    steps:
+    - name: actions/checkout
+      uses: actions/checkout@v3
+    - name: actions/cache
+      uses: actions/cache@v3.2.5
+      with:
+        path: ${{ env.PIP_CACHE }}
+        key: ubuntu-22.04-pip-static-checks-${{ hashFiles('requirements-lint.txt') }}
+        restore-keys: ubuntu-22.04-pip-static-checks-
+    - name: pip
+      run: |
+        python3 -m pip install --user -r requirements-lint.txt --no-warn-script-location
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: make format
+      run: |
+        set +x
+        make format
+        if ! [ -z "$(git diff HEAD)" ]; then
+            echo "Some files modified after code formatting check."
+            git status --porcelain
+            exit 1
+        fi
+    - name: make lint
+      run: |
+        set +x
+        make lint
+  test:
+    name: Unit tests
+    if: "!contains(github.event.head_commit.message, 'Bump version') || github.event_name != 'push'"
+    runs-on: ubuntu-22.04
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.actor }}-${{ github.head_ref || github.run_id }}-${{ matrix.python-version }}
+      cancel-in-progress: true
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
+      fail-fast: false
+    steps:
+    - name: actions/checkout
+      uses: actions/checkout@v3
+    - uses: "actions/setup-python@v1"
+      with:
+        python-version: "${{ matrix.python-version }}"
+    - name: actions/cache
+      uses: actions/cache@v3.2.5
+      with:
+        path: ${{ env.PIP_CACHE }}
+        key: ubuntu-22.04-pip-test-${{ matrix.python-version }}-${{ hashFiles('requirements.txt', 'requirements-test.txt') }}
+        restore-keys: ubuntu-22.04-pip-test-
+    - name: actions/cache
+      uses: actions/cache@v3.2.5
+      with:
+        path: ${{ env.MIMALLOC_CACHE }}
+        key: ubuntu-22.04-mimalloc-${{ hashFiles('medvedi/mimalloc.h') }}
+        restore-keys: ubuntu-22.04-mimalloc-
+    - name: mimalloc
+      run: |
+        make mimalloc
+    - name: pip
+      run: |
+        python3 -m pip install --user -r requirements.txt  -r requirements-test.txt --no-warn-script-location
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        python3 -m pip install --user --no-deps -e .
+    - name: test
+      run: |
+        set +x
+        ls medvedi
+        PYTEST_WORKERS=2 PYTEST_EXTRA="--cov-report=xml --cov medvedi" make test
+    - uses: codecov/codecov-action@v1
+      name: codecov
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
