@@ -106,7 +106,7 @@ jobs:
       with:
         python-version: 3.11
     - name: install build
-      run: python3 -m pip install --user build twine
+      run: python3 -m pip install --user build twine auditwheel
     - name: actions/cache
       uses: actions/cache@v3.2.5
       with:
@@ -121,6 +121,7 @@ jobs:
         python3 -m build
         ls dist
         twine --version
+        auditwheel repair --plat manylinux_2_35_x86_64 dist/*.whl
   bump_version:
     name: Bump the version
     needs: [ static_checks, test, package ]
