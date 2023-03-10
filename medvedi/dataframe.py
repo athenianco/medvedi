@@ -29,6 +29,14 @@ class Index:
         """Return the number of rows in the bound DataFrame."""
         return len(self._parent)
 
+    def __str__(self) -> str:
+        """Support str()."""
+        return "(" + ", ".join(map(str, self.names)) + ")"
+
+    def __sentry_repr__(self):
+        """Support Sentry."""
+        return str(self)
+
     @property
     def names(self) -> tuple[Hashable, ...]:
         """Return the column keys that form the index."""
@@ -350,13 +358,12 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         df = self.copy() if not inplace else self
         old_index = df._index
 
-        if isinstance(index, list):
-            index = np.asarray(index)
-        if isinstance(index, np.ndarray) and index.ndim > 1:
+        if isinstance(index, list) or (isinstance(index, np.ndarray) and index.ndim > 1):
             index = tuple(index)
 
-        if isinstance(index, np.ndarray):
-            index = np.asarray(index)
+        if index == ():
+            df._index = index
+        elif isinstance(index, np.ndarray):
             if "_index0" in df and not drop:
                 raise ValueError('Cannot set an unnamed index "_index0": column already exists')
             df._index = ("_index0",)
