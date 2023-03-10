@@ -95,6 +95,22 @@ class Grouper:
         np.cumsum(self.counts[:-1], out=indexes[1:])
         return indexes
 
+    def group_indexes(self) -> npt.NDArray[np.int_]:
+        """
+        Calculate the group key indexes.
+
+        Usage:
+        >>> df = DataFrame({"a": [1, 1, 2, 2, 3, 3, 3], "b": [4, 5, 6, 7, 8, 9, 10]})
+        >>> df.groupby("a").group_indexes()
+        array([0, 2, 4])
+        >>> df["a"][df.groupby("a").group_indexes()]
+        array([1, 2, 3])
+        """
+        indexes = np.empty(len(self.counts), dtype=int)
+        indexes[0] = 0
+        np.cumsum(self.counts[:-1], out=indexes[1:])
+        return self.order[indexes]
+
     def __iter__(self):
         """
         Iterate over indexes of each group.

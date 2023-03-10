@@ -52,3 +52,9 @@ def test_groupby_external():
 
     with pytest.raises(ValueError):
         df.groupby([0, 1, 0, 1, 0, 1])
+
+
+def test_groupby_group_indexes():
+    df = DataFrame({"a": [1, 1, 2, 2, 3, 3, 3], "b": [4, 5, 6, 7, 8, 9, 10]})
+    assert_array_equal(df.groupby("a").group_indexes(), [0, 2, 4])
+    assert_array_equal(df["a"][df.groupby("a").group_indexes()], [1, 2, 3])
