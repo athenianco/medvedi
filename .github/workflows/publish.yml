@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*'
 
+env:
+  MIMALLOC_CACHE: |
+    medvedi/libmimalloc.so*
+    medvedi/mimalloc.h
+
 jobs:
   publish:
     name: "Publish release"
