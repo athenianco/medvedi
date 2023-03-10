@@ -484,7 +484,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             return df.take(first_found, inplace=inplace)
         return df
 
-    def groupby(self, *by: Hashable) -> Grouper:
+    def groupby(self, *by: Hashable | npt.ArrayLike) -> Grouper:
         """
         Group rows by one or more columns in `by`.
 
@@ -504,7 +504,16 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         a 3
         b [ 8  9 10]
         """
-        order, values = self._order([self[c] for c in by], "stable")
+        seed = []
+        for c in by:
+            if isinstance(c, (list, np.ndarray)):
+                c = np.asarray(c)
+                if c.shape != (len(self),):
+                    raise ValueError(f"shape mismatch {c.shape} != ({len(self)},)")
+                seed.append(c)
+            else:
+                seed.append(self[c])
+        order, values = self._order(seed, "stable")
         _, counts = np.unique(values[order], return_counts=True)
         return Grouper(order, counts)
 
