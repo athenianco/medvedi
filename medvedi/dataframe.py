@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from itertools import repeat
-from typing import Any, Hashable, Iterable, Literal, Mapping, Sequence
+from typing import Any, Hashable, Iterable, Literal, Mapping, Sequence, Union
 
 import numpy as np
 from numpy import typing as npt
@@ -42,6 +42,15 @@ class Index:
         """Return the column keys that form the index."""
         return self._parent._index
 
+    @property
+    def values(self) -> np.ndarray:
+        """Return the only index level if the index is 1-D."""
+        if len(self._parent._index) != 1:
+            raise AttributeError(
+                "Index.values require a single index level, use get_level_values() instead",
+            )
+        return self._parent[self._parent._index[0]]
+
     def get_level_values(self, n: int) -> np.ndarray:
         """
         Extract the specified index level values.
@@ -72,7 +81,7 @@ class Grouper:
     order: npt.NDArray[np.int_]
     counts: npt.NDArray[np.int_]
 
-    def reduceat_indexes(self) -> npt.NDArray[int]:
+    def reduceat_indexes(self) -> npt.NDArray[np.int_]:
         """
         Calculate the indexes for ufunc.reduceat aggregation.
 
@@ -123,9 +132,18 @@ class Iloc:
         """Initialize a new instance of `Iloc` class."""
         self._parent = parent
 
-    def __getitem__(self, item: int) -> dict[Hashable, Any]:
+    def __getitem__(
+        self,
+        item: int | slice | list[int] | npt.NDArray[np.int_],
+    ) -> Union[dict[Hashable, Any], "DataFrame"]:
         """Get the column values at the specified absolute index."""
         length = len(self._parent)
+        if isinstance(item, slice):
+            item = np.arange(*item.indices(length), dtype=int)
+        if isinstance(item, (list, np.ndarray)):
+            return self._parent.take(item)
+        if not isinstance(item, (int, np.int_)):
+            raise TypeError(f"iloc[{item}] is not supported")
         if item >= length or (length + item) < 0:
             raise IndexError(f"iloc[{item}] is out of range [-{length}, {length})")
         return {k: v[item] for k, v in self._parent._columns.items()}
@@ -273,7 +291,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
 
     def take(
         self,
-        mask_or_indexes: npt.NDArray[np.bool_ | np.int_],
+        mask_or_indexes: npt.ArrayLike,
         inplace: bool = False,
     ) -> "DataFrame":
         """
@@ -283,6 +301,8 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         :param inplace: Value indicating whether we must update the DataFrame instead of creating \
                         a new one.
         """
+        mask_or_indexes = np.asarray(mask_or_indexes)
+
         if not inplace:
             return type(self)(
                 {k: v[mask_or_indexes] for k, v in self._columns.items()},

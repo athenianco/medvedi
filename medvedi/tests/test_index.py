@@ -82,3 +82,11 @@ def test_reset_index_leave():
     assert df.columns == ("a", "b")
     assert_array_equal(df["a"], [0, 1, 2])
     assert df.index.names == ()
+
+
+def test_index_values():
+    df = DataFrame({"a": [0, 1, 2], "b": ["a", "b", "c"]}, index="a")
+    assert_array_equal(df.index.values, [0, 1, 2])
+    df.set_index(["a", "b"], inplace=True)
+    with pytest.raises(AttributeError):
+        df.index.values
