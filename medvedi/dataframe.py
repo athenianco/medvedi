@@ -64,6 +64,20 @@ class Grouper:
     order: npt.NDArray[np.int_]
     counts: npt.NDArray[np.int_]
 
+    def reduceat_indexes(self) -> npt.NDArray[int]:
+        """
+        Calculate the indexes for ufunc.reduceat aggregation.
+
+        Usage:
+        >>> df = DataFrame({"a": [1, 1, 2, 2, 3, 3, 3], "b": [4, 5, 6, 7, 8, 9, 10]})
+        >>> np.add.reduceat(df["b"], df.groupby("a").reduceat_indexes())
+        array([ 9, 13, 27])
+        """
+        indexes = np.empty(len(self.counts), dtype=int)
+        indexes[0] = 0
+        np.cumsum(self.counts[:-1], out=indexes[1:])
+        return indexes
+
     def __iter__(self):
         """
         Iterate over indexes of each group.
@@ -232,13 +246,28 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         """
         return zip(*(self[c] for c in columns))
 
-    def take(self, mask_or_indexes: npt.NDArray[np.bool_ | np.int_]) -> "DataFrame":
-        """Extract a part of the DataFrame addressed by row indexes or by a row selection mask."""
-        return type(self)(
-            {k: v[mask_or_indexes] for k, v in self._columns.items()},
-            index=self._index,
-            check=False,
-        )
+    def take(
+        self,
+        mask_or_indexes: npt.NDArray[np.bool_ | np.int_],
+        inplace: bool = False,
+    ) -> "DataFrame":
+        """
+        Extract a part of the DataFrame addressed by row indexes or by a row selection mask.
+
+        :param mask_or_indexes: Either a boolean mask or a sequence of indexes.
+        :param inplace: Value indicating whether we must update the DataFrame instead of creating \
+                        a new one.
+        """
+        if not inplace:
+            return type(self)(
+                {k: v[mask_or_indexes] for k, v in self._columns.items()},
+                index=self._index,
+                check=False,
+            )
+        columns = self._columns
+        for k, v in columns.items():
+            columns[k] = v[mask_or_indexes]
+        return self
 
     def copy(self) -> "DataFrame":
         """Produce a deep copy of the DataFrame."""
@@ -381,7 +410,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         subset: Iterable[Hashable],
         keep: Literal["first", "last"] = "first",
         inplace: bool = False,
-        ignore_index=False,
+        ignore_index: bool = False,
     ) -> "DataFrame":
         """
         Remove duplicate rows from the DataFrame.
@@ -397,12 +426,14 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         if ignore_index:
             df._index = ()
         by = [df[c] for c in subset]
-        if keep == "last":
-            by = [c[::-1] for c in by]
         order, merged = df._order(by, "stable")
+        if keep == "last":
+            order = order[::-1]
         _, first_found = np.unique(merged[order], return_index=True)
         if len(first_found) < len(merged):
-            return df.take(first_found)
+            if keep == "last":
+                first_found = np.arange(len(merged), dtype=int)[order][first_found]
+            return df.take(first_found, inplace=inplace)
         return df
 
     def groupby(self, *by: Hashable) -> Grouper:
