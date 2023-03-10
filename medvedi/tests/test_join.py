@@ -2,6 +2,7 @@ from numpy.testing import assert_array_equal
 import pytest
 
 from medvedi import DataFrame
+from medvedi.pure_static import PureStaticDataFrameMethods
 from medvedi.testing import assert_frame_equal
 
 
@@ -20,6 +21,9 @@ def test_join_method():
     df = DataFrame({"a": [0, 1, 2]})
     with pytest.raises(AttributeError):
         df.join(df)
+
+    with pytest.raises(NotImplementedError):
+        PureStaticDataFrameMethods._join(DataFrame)
 
 
 def test_join_two_disjoint():

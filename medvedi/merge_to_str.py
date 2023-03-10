@@ -3,7 +3,7 @@ import numpy as np
 mergeable_dtype_kinds = frozenset(("i", "u", "m", "M", "S"))
 
 
-def merge_to_str(*arrs: np.ndarray, map_nat_to: int | None = None) -> np.ndarray:
+def merge_to_str(*arrs: np.ndarray) -> np.ndarray:
     """
     Convert one or more arrays of integers, bytes, datetime64, timedelta64 to S(total_bytes + 1).
 
@@ -11,8 +11,6 @@ def merge_to_str(*arrs: np.ndarray, map_nat_to: int | None = None) -> np.ndarray
     in np.char.add. Thus, we have to pad with ";".
 
     We copy bytes ("S"), datetime64, timedelta64 verbatim.
-
-    :param map_nat_to: Replace all not-a-times with this value.
     """
     assert len(arrs) > 0
     size = len(arrs[0])
@@ -34,7 +32,5 @@ def merge_to_str(*arrs: np.ndarray, map_nat_to: int | None = None) -> np.ndarray
         else:
             col = arr
         arena[:, pos : pos + itemsize] = col.view(np.uint8).reshape(size, itemsize)
-        if (kind == "m" or kind == "M") and map_nat_to is not None:
-            arena[col != col, pos : pos + itemsize] = map_nat_to
         pos += itemsize
     return arena.ravel().view(f"S{str_len}")

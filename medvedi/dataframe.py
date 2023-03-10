@@ -7,8 +7,8 @@ from numpy import typing as npt
 
 try:
     import pyarrow as pa
-except ImportError:
-    pa = None
+except ImportError:  # pragma: no cover
+    pa = None  # pragma: no cover
 
 from medvedi.accelerators import in1d_str, is_not_null, is_null, unordered_unique
 from medvedi.io import deserialize_df, serialize_df
@@ -42,7 +42,7 @@ class Index:
         :return: Numpy array with the referenced column values.
         """
         columns = self._parent._index
-        if n >= len(columns):
+        if n >= len(columns) or n < 0:
             raise IndexError(f"Level out of range: {n} >= {len(columns)}")
         return self._parent[columns[n]]
 
@@ -197,7 +197,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         value = np.squeeze(np.asarray(value))
         if value.ndim != 1:
             raise ValueError(f"numpy array must be one-dimensional, got shape {value.shape}")
-        if len(self) != len(value):
+        if len(self) != len(value) and self._columns:
             raise ValueError(f"new column must have the same length {len(self)}, got {len(value)}")
         self._columns[key] = value
 
@@ -348,12 +348,16 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         :param drop: Erase the old indexed columns, except those mentioned in the new index.
         """
         df = self.copy() if not inplace else self
-
         old_index = df._index
 
-        if isinstance(index, (np.ndarray, list)):
+        if isinstance(index, list):
             index = np.asarray(index)
-            if "_index0" in df:
+        if isinstance(index, np.ndarray) and index.ndim > 1:
+            index = tuple(index)
+
+        if isinstance(index, np.ndarray):
+            index = np.asarray(index)
+            if "_index0" in df and not drop:
                 raise ValueError('Cannot set an unnamed index "_index0": column already exists')
             df._index = ("_index0",)
             df[df._index[0]] = index
@@ -364,7 +368,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                 index_names = []
                 for i, level in enumerate(index):
                     name = f"_index{i}"
-                    if name in df:
+                    if name in df and not drop:
                         raise ValueError(
                             f'Cannot set an unnamed index "{name}": column already exists',
                         )
@@ -552,7 +556,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
     def to_arrow(self) -> "pa.Table":
         """Convert to a PyArrow Table."""
         if pa is None:
-            raise ImportError("pyarrow")
+            raise ImportError("pyarrow")  # pragma: no cover
         return pa.table(
             [pa.array(arr) for arr in self._columns.values()],
             names=list(self.columns),
@@ -562,7 +566,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
     def from_arrow(cls, table: "pa.Table") -> "DataFrame":
         """Convert a PyArrow Table to DataFrame."""
         if pa is None:
-            raise ImportError("pyarrow")
+            raise ImportError("pyarrow")  # pragma: no cover
         if not isinstance(table, pa.Table):
             raise TypeError(f"Expected a PyArrow Table, got {type(table)}")
         return DataFrame({k: table[k].to_numpy() for k in table.column_names})

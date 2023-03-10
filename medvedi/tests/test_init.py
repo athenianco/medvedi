@@ -15,6 +15,9 @@ def test_init_dict_smoke():
     assert_array_equal(df["b"], ["1", "2", "3"])
     assert df._index == ()
     assert df.columns == ("a", "b")
+    assert len(str(df)) > 0
+    assert len(repr(df)) > 0
+    assert len(df.__sentry_repr__()) > 0
 
 
 def test_init_dict_columns():
@@ -60,14 +63,20 @@ def test_init_iterable_index(index):
         index = (index,)
     assert df._index == index
     assert df.index.names == index
+    assert len(df.index) == len(df)
     assert_array_equal(df.index.get_level_values(0), df[index[0]])
     if len(index) > 1:
         assert_array_equal(df.index.get_level_values(1), df[index[1]])
+    with pytest.raises(IndexError):
+        df.index.get_level_values(2)
+    with pytest.raises(IndexError):
+        df.index.get_level_values(-1)
 
 
 def test_init_empty():
     assert DataFrame()._columns == {}
     assert DataFrame()._index == ()
+    assert len(DataFrame()) == 0
 
 
 def test_init_wrong_dict():
