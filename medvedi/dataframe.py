@@ -662,9 +662,9 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                 ]
                 merged_index = merge_to_str(*mapped_indexes)
         _, index_map, inverse_map = np.unique(merged_index, return_index=True, return_inverse=True)
-        cut_mask = None
+        leave_mask = None
         if how == "left":
-            cut_mask = index_map >= len(dfs[0])
+            leave_mask = index_map < len(dfs[0])
         elif how == "inner":
             encounters = np.zeros(len(index_map), dtype=np.uint8)
             pos = 0
@@ -672,10 +672,13 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                 df_len = len(df)
                 encounters[inverse_map[pos : pos + df_len]] += 1
                 pos += df_len
-            cut_mask = encounters < len(dfs)
-        if cut_mask is not None and len(cut_indexes := np.flatnonzero(cut_mask)):
-            index_map = index_map[~cut_mask]
-            inverse_map[np.in1d(inverse_map, cut_indexes)] = -1
+            leave_mask = encounters == len(dfs)
+        if leave_mask is not None and not leave_mask.all():
+            index_map = index_map[leave_mask]
+            inverse_index_map = np.full(len(leave_mask), -1, dtype=int)
+            inverse_index_map[leave_mask] = np.arange(leave_mask.sum())
+            inverse_map = inverse_index_map[inverse_map]
+            del inverse_index_map
         joined_columns = {i: c[index_map] for i, c in zip(indexes[0], transposed_resolved_indexes)}
         pos = 0
         mask = None
@@ -689,9 +692,14 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             for c, values in df._columns.items():
                 if c in df._index:
                     continue
-                if suffix is not None and c in joined_columns:
+                if suffix is not None:
                     c = str(c) + suffix
-                joined_columns[c] = joined_values = cls._empty_array(len(index_map), values.dtype)
+                if c not in joined_columns:
+                    joined_columns[c] = joined_values = cls._empty_array(
+                        len(index_map), values.dtype,
+                    )
+                else:
+                    joined_values = joined_columns[c]
                 if must_mask:
                     values = values[mask]
                 joined_values[values_order] = values
