@@ -42,3 +42,13 @@ def test_groupby_reduceat():
     df = DataFrame({"a": [1, 1, 2, 2, 3, 3, 3], "b": [4, 5, 6, 7, 8, 9, 10]})
     agg = np.add.reduceat(df["b"], df.groupby("a").reduceat_indexes())
     assert_array_equal(agg, [9, 13, 27])
+
+
+def test_groupby_external():
+    df = DataFrame({"a": [1, 1, 2, 2, 3, 3, 3], "b": [4, 5, 6, 7, 8, 9, 10]})
+    g = df.groupby([0, 1, 0, 1, 0, 1, 0])
+    assert_array_equal(g.counts, [4, 3])
+    assert_array_equal(g.order, [0, 2, 4, 6, 1, 3, 5])
+
+    with pytest.raises(ValueError):
+        df.groupby([0, 1, 0, 1, 0, 1])
