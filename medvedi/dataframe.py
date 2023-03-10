@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from itertools import repeat
-from typing import Any, Hashable, Iterable, Literal, Mapping, Sequence, Union
+from typing import Any, Hashable, Iterable, Literal, Mapping, Sequence, Union, overload
 
 import numpy as np
 from numpy import typing as npt
@@ -220,13 +220,30 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             return 0
         return len(next(iter(self._columns.values())))
 
-    def __getitem__(self, item: Hashable) -> np.ndarray:
+    @overload
+    def __getitem__(self, item: Hashable) -> np.ndarray:  # noqa: D105
+        ...
+
+    @overload
+    def __getitem__(self, item: list[Hashable]) -> "DataFrame":  # noqa: D105
+        ...
+
+    def __getitem__(self, item: Hashable | list[Hashable]) -> Union[np.ndarray, "DataFrame"]:
         """
         Extract the column values by key. Raise `KeyError` if the column doesn't exist.
+
+        If the item is an array, return the DataFrame with the corresponding columns.
 
         :param item: Column key.
         :return: Column values, zero-copy. The user is welcome to mutate the internals.
         """
+        if isinstance(item, list):
+            item = item.copy()
+            columns = self._columns
+            for i in self._index:
+                if i not in item:
+                    item.append(i)
+            return DataFrame({k: columns[k] for k in item}, index=self._index)
         return self._columns[item]
 
     def __setitem__(self, key: Hashable, value: npt.ArrayLike) -> None:
@@ -512,6 +529,8 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                     raise ValueError(f"shape mismatch {c.shape} != ({len(self)},)")
                 seed.append(c)
             else:
+                if not isinstance(c, Hashable):
+                    raise KeyError(f"Invalid column key: {c}")
                 seed.append(self[c])
         order, values = self._order(seed, "stable")
         _, counts = np.unique(values[order], return_counts=True)
