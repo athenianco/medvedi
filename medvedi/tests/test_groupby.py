@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.testing import assert_array_equal
 import pytest
 
 from medvedi import DataFrame
@@ -35,3 +36,9 @@ def test_groupby_2d_mixed_mergeable(dtype):
 def test_groupby_bad_column():
     with pytest.raises(KeyError):
         DataFrame({"a": [1, 1, 2, 2, 3, 3, 3]}).groupby("c")
+
+
+def test_groupby_reduceat():
+    df = DataFrame({"a": [1, 1, 2, 2, 3, 3, 3], "b": [4, 5, 6, 7, 8, 9, 10]})
+    agg = np.add.reduceat(df["b"], df.groupby("a").reduceat_indexes())
+    assert_array_equal(agg, [9, 13, 27])
