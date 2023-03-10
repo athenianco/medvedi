@@ -31,8 +31,10 @@ jobs:
       - name: "Build package"
         run: |
           set +x
-          python3 -m pip install --user build twine
+          python3 -m pip install --user build twine auditwheel
           python3 -m build
+          auditwheel repair --plat manylinux_2_35_x86_64 dist/*.whl
+          find dist -name '*linux_x86_64.whl' -delete
       - name: "Publish to PyPI"
         run: |
           set +x
