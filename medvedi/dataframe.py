@@ -114,6 +114,23 @@ class Grouper:
             yield indexes
 
 
+class Iloc:
+    """Retrieve rows by absolute index."""
+
+    __slots__ = ("_parent",)
+
+    def __init__(self, parent: "DataFrame"):
+        """Initialize a new instance of `Iloc` class."""
+        self._parent = parent
+
+    def __getitem__(self, item: int) -> dict[Hashable, Any]:
+        """Get the column values at the specified absolute index."""
+        length = len(self._parent)
+        if item >= length or (length + item) < 0:
+            raise IndexError(f"iloc[{item}] is out of range [-{length}, {length})")
+        return {k: v[item] for k, v in self._parent._columns.items()}
+
+
 class DataFrame(metaclass=PureStaticDataFrameMethods):
     """
     Core class of the library - a table with several columns.
@@ -546,6 +563,11 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         if kind == "m" or kind == "M" or kind == "f":
             return values == values
         return np.ones(len(values), dtype=bool)
+
+    @property
+    def iloc(self) -> Iloc:
+        """Get row by absolute index."""
+        return Iloc(self)
 
     def serialize_unsafe(self, alloc: object | None = None) -> bytes:
         """
