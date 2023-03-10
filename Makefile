@@ -22,6 +22,7 @@ format:
 lint:
 	flake8
 	mypy .
+	semgrep --config p/r2c-security-audit --severity ERROR --disable-version-check --error
 
 PYTEST_WORKERS ?= $(shell getconf _NPROCESSORS_ONLN)
 PYTEST_EXTRA ?=
