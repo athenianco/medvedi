@@ -1,5 +1,7 @@
 # MEDVeDI [![Build status](https://github.com/athenianco/medvedi/actions/workflows/push.yml/badge.svg)](https://github.com/athenianco/medvedi/actions/workflows/push.yml) [![codecov](https://codecov.io/gh/athenianco/medvedi/branch/master/graph/badge.svg?token=rkTwlIlCaI)](https://codecov.io/gh/athenianco/medvedi) [![Latest Version](https://img.shields.io/pypi/v/medvedi.svg)](https://pypi.python.org/pypi/medvedi) [![Python Versions](https://img.shields.io/pypi/pyversions/medvedi.svg)](https://pypi.python.org/pypi/medvedi) [![License](https://img.shields.io/pypi/l/medvedi.svg)](https://github.com/athenianco/medvedi/blob/main/LICENSE)
 
+![logo](docs/logo.png)
+
 Memory Efficient Deconstructed Vectorized Dataframe Interface.
 
 Design goals:

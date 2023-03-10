@@ -38,3 +38,8 @@ def test_in_object():
 def test_in_invert():
     df = DataFrame({"a": [1, 2, 3]})
     assert_array_equal(df.in_("a", [2, 3, 4], invert=True), [True, False, False])
+
+    df = DataFrame({"a": np.array(["1", "2", "3"], dtype="S1")})
+    assert_array_equal(
+        df.in_("a", np.array(["2", "3", "4"], dtype="S1"), invert=True), [True, False, False],
+    )
