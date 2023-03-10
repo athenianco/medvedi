@@ -3,6 +3,7 @@ from numpy.testing import assert_array_equal
 import pytest
 
 from medvedi import DataFrame
+from medvedi.testing import assert_frame_equal
 
 
 def test_init_dict_smoke():
@@ -145,3 +146,23 @@ def test_init_bad_type():
             },
             index="a",
         )
+
+
+def test_get_columns():
+    df = DataFrame(
+        {
+            "a": [1, 2, 3],
+            "b": ["1", "2", "3"],
+        },
+        index="b",
+    )
+    assert_frame_equal(
+        df[["b"]],
+        DataFrame(
+            {
+                "b": ["1", "2", "3"],
+            },
+            index="b",
+        ),
+    )
+    assert_frame_equal(df[["a"]], df)
