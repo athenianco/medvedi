@@ -3,6 +3,7 @@ from numpy.testing import assert_array_equal
 import pytest
 
 from medvedi import DataFrame
+from medvedi.testing import assert_frame_equal
 
 
 def test_drop_duplicates_one_first():
@@ -58,3 +59,8 @@ def test_drop_duplicates_two():
     assert_array_equal(df["a"], [1, 2, 3])
     assert_array_equal(df["b"], np.array(["0", "1", "3"], dtype="S1"))
     assert_array_equal(df["c"], [5, 6, 8])
+
+
+def test_drop_duplicates_noop():
+    df = DataFrame({"a": [1, 2, 3], "b": [0, 10, 3]}, index="a")
+    assert_frame_equal(df.drop_duplicates("a"), df)

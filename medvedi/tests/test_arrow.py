@@ -1,5 +1,6 @@
 import numpy as np
 import pyarrow as pa
+import pytest
 
 from medvedi import DataFrame
 from medvedi.testing import assert_frame_equal
@@ -23,3 +24,8 @@ def test_arrow_roundtrip():
     df_back["c"] = df_back["c"].astype("S1")
     df_back["d"] = df_back["d"].astype("U1")
     assert_frame_equal(df, df_back)
+
+
+def test_arrow_bad_from():
+    with pytest.raises(TypeError):
+        DataFrame.from_arrow(777)

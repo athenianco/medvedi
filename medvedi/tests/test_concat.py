@@ -2,6 +2,7 @@ from numpy.testing import assert_array_equal
 import pytest
 
 from medvedi import DataFrame
+from medvedi.pure_static import PureStaticDataFrameMethods
 
 
 def test_concat_zero():
@@ -17,6 +18,9 @@ def test_concat_method():
     df = DataFrame({"a": [1, 2, 3]})
     with pytest.raises(AttributeError):
         df.concat(df)
+
+    with pytest.raises(NotImplementedError):
+        PureStaticDataFrameMethods._concat(DataFrame)
 
 
 def test_concat_two():

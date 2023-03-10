@@ -79,7 +79,7 @@ def test_smoke():
     assert_frame_equal(df, new_df)
 
 
-async def test_corrupted():
+def test_corrupted():
     df = DataFrame(
         {
             "a": np.array(["x", "yy", "zzz"], dtype=object),
