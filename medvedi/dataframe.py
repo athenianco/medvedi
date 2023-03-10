@@ -615,6 +615,10 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
     ):
         if how == "right":
             return cls.join(*dfs[::-1], how="left", suffixes=suffixes, copy=copy)
+        if how not in ("left", "inner", "outer"):
+            raise ValueError(
+                f"`how` must be either 'left', 'right', 'inner', or 'outer', got {how}",
+            )
         if len(dfs) == 0:
             return cls()
         if len(dfs) > 255:
@@ -625,32 +629,29 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             raise TypeError(f"`suffixes` must be a tuple, got {type(suffixes)}")
         if suffixes:
             if len(suffixes) != len(dfs):
-                raise TypeError(
+                raise ValueError(
                     "`suffixes` must have the same length as the number of joined DataFrame-s: "
                     f"{len(suffixes)} vs. {len(dfs)}",
                 )
         else:
             suffixes = tuple(None for _ in dfs)
-        if how not in ("left", "inner", "outer"):
-            raise ValueError(
-                f"`how` must be either 'left', 'right', 'inner', or 'outer', got {how}",
-            )
         if len(dfs) == 1:
             if not copy:
                 return dfs[0]
             return dfs[0].copy()
         indexes = [dfs[0]._index]
         for df in dfs[1:]:
+            if not isinstance(df, DataFrame):
+                raise TypeError(f"Joined objects must be DataFrame-s, got {type(df)}")
             if df._index != indexes[0]:
                 raise ValueError(f"Incompatible indexes: {df._index} vs. {indexes[0]}")
             indexes.append(df._index)
+        if indexes[0] == ():
+            raise ValueError("Joining requires an index")
         transposed_resolved_indexes_builder: list[list[np.ndarray]] = [[] for _ in indexes[0]]
         for index, df in zip(indexes, dfs):
-            if index == ():
-                transposed_resolved_indexes_builder[0].append(np.arange(len(df), dtype=int))
-            else:
-                for i, c in enumerate(index):
-                    transposed_resolved_indexes_builder[i].append(df[c])
+            for i, c in enumerate(index):
+                transposed_resolved_indexes_builder[i].append(df[c])
         transposed_resolved_indexes: list[np.ndarray] = [
             np.concatenate(vals, casting="unsafe") for vals in transposed_resolved_indexes_builder
         ]
@@ -751,8 +752,6 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
     def _check_columns(columns: dict[Hashable, np.ndarray]) -> None:
         length = None
         for k, v in columns.items():
-            if not isinstance(v, np.ndarray):
-                raise TypeError(f"column {k} must be a numpy array, got {type(v)}")
             if length is None:
                 length = len(v)
             elif length != len(v):

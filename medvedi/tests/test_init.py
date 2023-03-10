@@ -124,3 +124,23 @@ def test_init_dict_index():
     assert "b" not in df
     assert df._index == ("_index0",)
     assert_array_equal(df.index.get_level_values(0), ["1", "2", "3"])
+
+
+def test_init_bad_shape():
+    with pytest.raises(ValueError):
+        DataFrame(
+            {
+                "a": [[1, 2, 3], [5, 6, 7]],
+            },
+            index="a",
+        )
+
+
+def test_init_bad_type():
+    with pytest.raises(TypeError):
+        DataFrame(
+            {
+                "a": "xxx",
+            },
+            index="a",
+        )

@@ -23,6 +23,24 @@ def test_concat_method():
         PureStaticDataFrameMethods._concat(DataFrame)
 
 
+def test_concat_bullshit():
+    with pytest.raises(TypeError):
+        DataFrame.concat("a", "b")
+
+    with pytest.raises(TypeError):
+        DataFrame.concat(DataFrame(), "b")
+
+    with pytest.raises(ValueError):
+        DataFrame.concat(DataFrame(), DataFrame({"a": [0, 1, 2]}))
+
+    with pytest.raises(ValueError):
+        DataFrame.concat(DataFrame({"a": [3, 4, 5]}), DataFrame({"a": [0, 1, 2]}, index="a"))
+
+    DataFrame.concat(
+        DataFrame({"a": [3, 4, 5]}), DataFrame({"a": [0, 1, 2]}, index="a"), ignore_index=True,
+    )
+
+
 def test_concat_two():
     df = DataFrame({"a": [1, 2, 3]})
     df = DataFrame.concat(df, df.take([1, 2]))
