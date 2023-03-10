@@ -14,6 +14,7 @@ def test_init_dict_smoke():
     assert_array_equal(df["a"], [1, 2, 3])
     assert_array_equal(df["b"], ["1", "2", "3"])
     assert df._index == ()
+    assert df.columns == ("a", "b")
 
 
 def test_init_dict_columns():
