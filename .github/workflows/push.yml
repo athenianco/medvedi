@@ -80,8 +80,7 @@ jobs:
         key: ubuntu-22.04-mimalloc-${{ hashFiles('medvedi/mimalloc.h') }}
         restore-keys: ubuntu-22.04-mimalloc-
     - name: mimalloc
-      run: |
-        make mimalloc
+      run: make mimalloc
     - name: pip
       run: |
         python3 -m pip install --user -r requirements.txt  -r requirements-test.txt --no-warn-script-location
@@ -96,9 +95,35 @@ jobs:
       name: codecov
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
+  package:
+    name: Package build
+    if: "!contains(github.event.head_commit.message, 'Bump version') || github.event_name != 'push'"
+    runs-on: ubuntu-22.04
+    steps:
+    - name: actions/checkout
+      uses: actions/checkout@v3
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.11
+    - name: install build
+      run: python3 -m pip install --user build twine
+    - name: actions/cache
+      uses: actions/cache@v3.2.5
+      with:
+        path: ${{ env.MIMALLOC_CACHE }}
+        key: ubuntu-22.04-mimalloc-${{ hashFiles('medvedi/mimalloc.h') }}
+        restore-keys: ubuntu-22.04-mimalloc-
+    - name: mimalloc
+      run: make mimalloc
+    - name: build
+      run: |
+        set +x
+        python3 -m build
+        ls dist
+        twine --version
   bump_version:
     name: Bump the version
-    needs: [ static_checks, test ]
+    needs: [ static_checks, test, package ]
     if: "!contains(github.event.head_commit.message, 'Bump version') && github.ref == 'refs/heads/master' && github.event_name == 'push'"
     runs-on: ubuntu-22.04
     steps:

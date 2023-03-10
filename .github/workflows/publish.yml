@@ -3,24 +3,35 @@ name: Publish
 on:
   push:
     tags:
-      - '*'
+      - 'v*'
 
 jobs:
   publish:
     name: "Publish release"
-    runs-on: "ubuntu-latest"
+    runs-on: ubuntu-latest
 
     steps:
-      - uses: "actions/checkout@v2"
-      - uses: "actions/setup-python@v2"
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v2
         with:
           python-version: 3.11
-      - name: "Install dependencies"
-        run: "scripts/install"
-      - name: "Build package & docs"
-        run: "scripts/build"
-      - name: "Publish to PyPI & deploy docs"
-        run: "scripts/publish"
+      - name: actions/cache
+        uses: actions/cache@v3.2.5
+        with:
+          path: ${{ env.MIMALLOC_CACHE }}
+          key: ubuntu-22.04-mimalloc-${{ hashFiles('medvedi/mimalloc.h') }}
+          restore-keys: ubuntu-22.04-mimalloc-
+      - name: mimalloc
+        run: make mimalloc
+      - name: "Build package"
+        run: |
+          set +x
+          python3 -m pip install --user build twine
+          python3 -m build
+      - name: "Publish to PyPI"
+        run: |
+          set +x
+          twine upload dist/*
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}

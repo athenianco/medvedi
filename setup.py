@@ -52,14 +52,15 @@ setup(
     ext_modules=ext_modules,
     include_dirs=[np.get_include(), str(code_root)],
     keywords=[],
-    install_requires=["numpy==1.23.4"],
+    install_requires=["numpy>=1.23,<1.24"],
     extras_require={
         "arrow": ["pyarrow"],
     },
     tests_require=[],  # see requirements-test.txt
     package_data={
         "": ["*.md"],
-        "medvedi": ["../requirements.txt", "libmimalloc.so*"],
+        "medvedi": ["../requirements.txt", "libmimalloc.so*", "mimalloc.h", "*.pyx"],
+        "medvedi.native": ["*.pyx", "*.pxd", "*.h"],
     },
     classifiers=[
         "Development Status :: 3 - Alpha",

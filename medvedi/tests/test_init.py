@@ -1,3 +1,4 @@
+import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
 
@@ -48,7 +49,7 @@ def test_init_iterable_default_columns():
     assert df._index == ()
 
 
-@pytest.mark.parametrize("index", ["a", ("a", "b"), [5, 6, 7]])
+@pytest.mark.parametrize("index", ["a", ("a", "b"), np.array([5, 6, 7])])
 def test_init_iterable_index(index):
     df = DataFrame(
         [[1, 2, 3], ["1", "2", "3"]],
@@ -57,7 +58,7 @@ def test_init_iterable_index(index):
     )
     assert_array_equal(df["a"], [1, 2, 3])
     assert_array_equal(df["b"], ["1", "2", "3"])
-    if isinstance(index, list):
+    if isinstance(index, np.ndarray):
         index = ("_index0",)
     if not isinstance(index, tuple):
         index = (index,)
