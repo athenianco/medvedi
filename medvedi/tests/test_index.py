@@ -3,6 +3,7 @@ from numpy.testing import assert_array_equal
 import pytest
 
 from medvedi import DataFrame
+from medvedi.testing import assert_index_equal
 
 
 def test_set_index_name_existing():
@@ -14,6 +15,8 @@ def test_set_index_name_existing():
     assert str(new_df.index) == "(a)"
     assert new_df.index.__sentry_repr__() == str(new_df.index)
     assert new_df is not df
+    with pytest.raises(AssertionError):
+        assert_index_equal(df.index, new_df.index)
 
 
 def test_set_index_name_not_existing():
@@ -149,3 +152,9 @@ def test_index_is_monotonic_increasing_empty():
 
     df = DataFrame({"a": [1]}, index="a")
     assert df.index.is_monotonic_increasing
+
+
+def test_index_assert_equal():
+    df1 = DataFrame({"a": [0, 1, 2]}, index="a")
+    df2 = DataFrame({"a": [0, 1, 2], "b": [5, 6, 7]}, index="a")
+    assert_index_equal(df1.index, df2.index)
