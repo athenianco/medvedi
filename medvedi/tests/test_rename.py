@@ -6,10 +6,11 @@ from medvedi import DataFrame
 
 @pytest.mark.parametrize("inplace", [False, True])
 def test_rename_inplace(inplace):
-    df = DataFrame({"a": [0, 1, 2]})
+    df = DataFrame({"a": [0, 1, 2]}, index="a")
     new_df = df.rename({"a": "b"}, inplace=inplace)
     assert new_df.columns == ("b",)
     assert_array_equal(new_df["b"], [0, 1, 2])
+    assert new_df.index.names == ("b",)
     if inplace:
         assert df is new_df
     else:

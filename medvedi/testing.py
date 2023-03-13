@@ -3,7 +3,7 @@ from typing import Hashable
 import numpy as np
 from numpy.testing import assert_array_equal
 
-from medvedi import DataFrame
+from medvedi import DataFrame, Index
 
 
 def assert_frame_equal(df1: DataFrame, df2: DataFrame) -> None:
@@ -29,3 +29,9 @@ def _assert_array_equal(v1: np.ndarray, v2: np.ndarray, path: Hashable) -> None:
                 assert vi1 == vi2, f"{path}[{i}]"
     else:
         assert_array_equal(v1, v2, err_msg=str(path))
+
+
+def assert_index_equal(i1: Index, i2: Index) -> None:
+    """Assert whether two Index-es are equivalent."""
+    assert i1.names == i2.names
+    assert_frame_equal(i1._parent[list(i1.names)], i2._parent[list(i2.names)])

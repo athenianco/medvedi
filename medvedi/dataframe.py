@@ -467,7 +467,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
 
         df = self if inplace else self.copy()
 
-        if not ignore_index and df._index == ():
+        if not ignore_index and len(df._index) == 0:
             df["_index0"] = np.arange(len(self), dtype=int)
             df._index = ("_index0",)
 
@@ -549,7 +549,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         if isinstance(index, list) or (isinstance(index, np.ndarray) and index.ndim > 1):
             index = tuple(index)
 
-        if index == ():
+        if isinstance(index, tuple) and len(index) == 0:
             df._index = index
         elif isinstance(index, np.ndarray):
             if "_index0" in df and not drop:
@@ -633,6 +633,8 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             del df._columns[old]
         for key, val in new_columns.items():
             df[key] = val
+
+        df._index = tuple(columns.get(i, i) for i in df._index)
 
         return df
 
