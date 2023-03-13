@@ -36,6 +36,8 @@ def test_groupby_2d_mixed_mergeable(dtype):
 def test_groupby_bad_column():
     with pytest.raises(KeyError):
         DataFrame({"a": [1, 1, 2, 2, 3, 3, 3]}).groupby("c")
+    with pytest.raises(TypeError):
+        DataFrame({"a": [1, 1, 2, 2, 3, 3, 3]}).groupby(set())
 
 
 def test_groupby_reduceat():
