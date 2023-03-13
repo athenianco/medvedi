@@ -114,6 +114,9 @@ def test_index_is_monotonic_increasing_true():
     df = DataFrame({"a": [0, 1, 1], "b": [50, 5, 5]}, index=("a", "b"))
     assert df.index.is_monotonic_increasing
 
+    df = DataFrame({"a": [0, 1, 2], "b": [50, 6, 5]}, index=("a", "b"))
+    assert df.index.is_monotonic_increasing
+
 
 def test_index_is_monotonic_increasing_false():
     df = DataFrame({"a": [0, 3, 2]}, index="a")
@@ -129,6 +132,12 @@ def test_index_is_monotonic_increasing_3d():
         index=("a", "b", "c"),
     )
     assert df.index.is_monotonic_increasing
+
+    df = DataFrame(
+        {"a": [0, 1, 1, 2], "b": [50.3, 5.1, 5.1, 0], "c": ["x", "b", "a", ""]},
+        index=("a", "b", "c"),
+    )
+    assert not df.index.is_monotonic_increasing
 
 
 def test_index_is_monotonic_increasing_empty():
