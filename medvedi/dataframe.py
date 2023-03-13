@@ -465,7 +465,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         elif len(by) == 0:
             raise ValueError("must specify at least one column")
 
-        df = self.copy() if not inplace else self
+        df = self if inplace else self.copy()
 
         if not ignore_index and df._index == ():
             df["_index0"] = np.arange(len(self), dtype=int)
@@ -543,7 +543,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                         returning a copy.
         :param drop: Erase the old indexed columns, except those mentioned in the new index.
         """
-        df = self.copy() if not inplace else self
+        df = self if inplace else self.copy()
         old_index = df._index
 
         if isinstance(index, list) or (isinstance(index, np.ndarray) and index.ndim > 1):
@@ -595,13 +595,45 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                         returning a copy.
         :param drop: Delete the columns referenced by `index`.
         """
-        df = self.copy() if not inplace else self
+        df = self if inplace else self.copy()
 
         if df._index and drop:
             for c in df._index:
                 del df._columns[c]
 
         df._index = ()
+        return df
+
+    def rename(
+        self,
+        columns: Mapping[Hashable, Hashable],
+        inplace: bool = False,
+        errors: Literal["raise", "ignore"] = "ignore",
+    ) -> "DataFrame":
+        """
+        Rename columns in bulk.
+
+        :param columns: Mapping from old to new column keys.
+        :param inplace: Value indicating whether we must update the current DataFrame instead of \
+                        returning a copy.
+        :param errors: "ignore" suppresses missing columns, "raise" forwards KeyError.
+        :return: DataFrame with renamed columns.
+        """
+        df = self if inplace else self.copy()
+        if not isinstance(columns, Mapping):
+            raise TypeError(f"columns must be a mapping, got {type(columns)}")
+        new_columns = {}
+        for old, new in columns.items():
+            try:
+                new_columns[new] = df._columns[old]
+            except KeyError as e:
+                if errors == "raise":
+                    raise e from None
+                continue
+            del df._columns[old]
+        for key, val in new_columns.items():
+            df[key] = val
+
         return df
 
     def drop_duplicates(
@@ -703,8 +735,10 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         """
         Return the unique elements of `column`.
 
+        :param column: Column key to select.
         :param unordered: Value indicating whether the result must be sorted or the caller \
                           doesn't care.
+        :return: Unique column values.
         """
         values = self[column]
         if unordered:
@@ -771,6 +805,32 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         if m != m:
             return None
         return m
+
+    def fillna(
+        self,
+        value: Any,
+        column: Hashable | None = None,
+        inplace: bool = False,
+    ) -> "DataFrame":
+        """
+        Set null-like elements (None, NaN, NaT) to `value`.
+
+        :param value: Scalar replacement value for null-likes.
+        :param column: Affected column key. The default is all columns.
+        :param inplace: Update the current DataFrame instead of returning a copy.
+        :return: Filled DataFrame.
+        """
+        df = self if inplace else self.copy()
+        filled: Iterable[Hashable]
+        if column is None:
+            filled = df._columns
+        else:
+            filled = (column,)
+        columns = df._columns
+        for c in filled:
+            v = columns[c]
+            v[df.isnull(c)] = value
+        return df
 
     @property
     def iloc(self) -> Iloc:
