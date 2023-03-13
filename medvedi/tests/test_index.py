@@ -9,6 +9,7 @@ def test_set_index_name_existing():
     df = DataFrame({"a": [0, 1, 2]})
     new_df = df.set_index("a")
     assert new_df.index.names == ("a",)
+    assert new_df.index.nlevels == 1
     assert str(new_df.index) == "(a)"
     assert new_df.index.__sentry_repr__() == str(new_df.index)
     assert new_df is not df
@@ -40,6 +41,7 @@ def test_set_index_name_clash_2d():
         df.set_index([[5, 6, 7], ["a", "b", "c"]], inplace=True, drop=False)
     df.set_index([[5, 6, 7], ["x", "y", "z"]], inplace=True, drop=True)
     assert len(df.index.names) == 2
+    assert df.index.nlevels == 2
     assert_array_equal(df.index.get_level_values(1), ["x", "y", "z"])
 
 
@@ -52,6 +54,7 @@ def test_set_index_drop():
 
     new_df = df.set_index((), drop=True)
     assert new_df.index.names == ()
+    assert new_df.index.nlevels == 0
     assert new_df.columns == ("b",)
 
     new_df = df.set_index([], drop=True)

@@ -33,6 +33,11 @@ class Index:
         """Support str()."""
         return "(" + ", ".join(map(str, self.names)) + ")"
 
+    @property
+    def nlevels(self) -> int:
+        """Return the number of index levels."""
+        return len(self._parent._index)
+
     def __sentry_repr__(self):
         """Support Sentry."""
         return str(self)
