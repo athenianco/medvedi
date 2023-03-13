@@ -43,6 +43,34 @@ class Index:
         """Return value indicating whether the number of rows is zero."""
         return self._parent.empty
 
+    @property
+    def is_monotonic_increasing(self) -> bool:
+        """Check whether the index is sorted in ascending order."""
+        index = self._parent._index
+        columns = self._parent._columns
+        last_level = len(index) - 1
+        mask: npt.NDArray[np.bool_] | None = None
+        for i, level in enumerate(index):
+            values = columns[level]
+            if mask is not None:
+                values = values[mask]
+            if (values[1:] >= values[:-1]).all():
+                if i == last_level or len(values) == 1:
+                    return True
+                if mask is None:
+                    mask = np.ones(len(values), dtype=bool)
+                diff_mask = np.zeros(len(values), dtype=bool)
+                zero_mask = values[1:] == values[:-1]
+                diff_mask[1:] = zero_mask
+                diff_mask[:-1] |= zero_mask
+                mask[mask] &= diff_mask
+                if not mask.any():
+                    return True
+                continue
+            else:
+                return False
+        return True
+
     def __sentry_repr__(self):
         """Support Sentry."""
         return str(self)
@@ -605,7 +633,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                 seed.append(c)
             else:
                 if not isinstance(c, Hashable):
-                    raise KeyError(f"Invalid column key: {c}")
+                    raise TypeError(f"Invalid column key: {c}")
                 seed.append(self[c])
         order, values = self._order(seed, "stable")
         _, counts = np.unique(values[order], return_counts=True)
