@@ -562,7 +562,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         _, counts = np.unique(values[order], return_counts=True)
         return Grouper(order, counts)
 
-    def in_(
+    def isin(
         self,
         column: Hashable,
         haystack: npt.ArrayLike,
