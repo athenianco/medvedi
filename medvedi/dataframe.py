@@ -392,6 +392,37 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         df._index = self._index
         return df
 
+    def astype(
+        self,
+        dtype: np.dtype | str | type | Mapping[Hashable, np.dtype | str | type],
+        copy: bool = True,
+        errors: Literal["raise", "ignore"] = "raise",
+    ) -> "DataFrame":
+        """
+        Convert the data type of columns.
+
+        :param dtype: Global data type for all the columns or mapping from column keys to the new \
+                      data types.
+        :param copy: Value indicating whether the operation copies the original DataFrame.
+        :param errors: Either "raise" (default) or "ignore". If set to "ignore", silently skip \
+                       columns which failed dtype conversion.
+        :return: Converted DataFrame.
+        """
+        if not isinstance(dtype, Mapping):
+            dtype = {k: dtype for k in self._columns}
+
+        df = self.copy() if copy else self
+
+        columns = df._columns
+        for k, k_dt in dtype.items():
+            try:
+                columns[k] = columns[k].astype(k_dt, copy=False)
+            except ValueError as e:
+                if errors == "raise":
+                    raise e from None
+
+        return df
+
     @property
     def index(self) -> Index:
         """Return the associated index."""
