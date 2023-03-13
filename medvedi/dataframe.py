@@ -61,11 +61,11 @@ class Index:
                     mask = np.ones(len(values), dtype=bool)
                 diff_mask = np.zeros(len(values), dtype=bool)
                 zero_mask = values[1:] == values[:-1]
+                if not zero_mask.any():
+                    return True
                 diff_mask[1:] = zero_mask
                 diff_mask[:-1] |= zero_mask
                 mask[mask] &= diff_mask
-                if not mask.any():
-                    return True
                 continue
             else:
                 return False
@@ -276,11 +276,11 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
 
     @overload
     def __getitem__(self, item: Hashable) -> np.ndarray:  # noqa: D105
-        ...
+        ...  # pragma: no cover
 
     @overload
     def __getitem__(self, item: list[Hashable]) -> "DataFrame":  # noqa: D105
-        ...
+        ...  # pragma: no cover
 
     def __getitem__(self, item: Hashable | list[Hashable]) -> Union[np.ndarray, "DataFrame"]:
         """
