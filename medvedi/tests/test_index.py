@@ -10,6 +10,7 @@ def test_set_index_name_existing():
     new_df = df.set_index("a")
     assert new_df.index.names == ("a",)
     assert new_df.index.nlevels == 1
+    assert not new_df.index.empty
     assert str(new_df.index) == "(a)"
     assert new_df.index.__sentry_repr__() == str(new_df.index)
     assert new_df is not df
@@ -93,3 +94,8 @@ def test_index_values():
     df.set_index(["a", "b"], inplace=True)
     with pytest.raises(AttributeError):
         df.index.values
+
+
+def test_empty_index():
+    assert DataFrame({"a": []}, index="a").index.empty
+    assert DataFrame().index.empty

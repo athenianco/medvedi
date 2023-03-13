@@ -38,6 +38,11 @@ class Index:
         """Return the number of index levels."""
         return len(self._parent._index)
 
+    @property
+    def empty(self) -> bool:
+        """Return value indicating whether the number of rows is zero."""
+        return self._parent.empty
+
     def __sentry_repr__(self):
         """Support Sentry."""
         return str(self)
