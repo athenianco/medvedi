@@ -1,5 +1,6 @@
 import numpy as np
 from numpy.testing import assert_array_equal
+import pytest
 
 from medvedi import DataFrame
 
@@ -76,3 +77,33 @@ def test_sort_values_hint_two_m():
     df = DataFrame({"a": np.array([3, 2, 2, 1], dtype="timedelta64[s]"), "b": [0] * 4})
     df1 = df.sort_values(["b", "a"], ignore_index=True, non_negative_hint=True)
     assert_array_equal(df1["a"], np.array([1, 2, 2, 3], dtype="timedelta64[s]"))
+
+
+def test_sort_values_empty_by():
+    df = DataFrame({"a": [3, 2, 1]})
+    with pytest.raises(ValueError):
+        df.sort_values([])
+
+
+def test_sort_index_levels_none():
+    df = DataFrame({"a": [3, 2, 1]}, index="a")
+    df.sort_index(inplace=True)
+    assert_array_equal(df["a"], [1, 2, 3])
+
+
+def test_sort_index_levels_single():
+    df = DataFrame({"a": [3, 2, 1]}, index="a")
+    df.sort_index(0, inplace=True)
+    assert_array_equal(df["a"], [1, 2, 3])
+
+
+def test_sort_index_levels_list():
+    df = DataFrame({"a": [3, 2, 1]}, index="a")
+    df.sort_index([0], inplace=True)
+    assert_array_equal(df["a"], [1, 2, 3])
+
+
+def test_sort_index_bad_type():
+    df = DataFrame({"a": [3, 2, 1]}, index="a")
+    with pytest.raises(TypeError):
+        df.sort_index("a", inplace=True)

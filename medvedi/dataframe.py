@@ -399,15 +399,18 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                              be reset.
         :param non_negative_hint: The column values referenced by `by` are all non-negative. \
                                   This enables low-level optimization in multi-column mode.
+        :return: Sorted DataFrame.
         """
+        if not isinstance(by, (tuple, list)):
+            by = (by,)
+        elif len(by) == 0:
+            raise ValueError("must specify at least one column")
+
         df = self.copy() if not inplace else self
 
         if not ignore_index and df._index == ():
             df["_index0"] = np.arange(len(self), dtype=int)
             df._index = ("_index0",)
-
-        if not isinstance(by, (tuple, list)):
-            by = (by,)
 
         order, _ = self._order(
             [self[c] for c in by],
@@ -425,6 +428,52 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             df._index = ()
 
         return df
+
+    def sort_index(
+        self,
+        level: int | Sequence[int] | None = None,
+        ascending: bool = True,
+        inplace: bool = False,
+        kind: Literal["quicksort", "stable"] | None = None,
+        na_position: Literal["first", "last"] = "last",
+        ignore_index: bool = False,
+        non_negative_hint: bool = False,
+    ) -> "DataFrame":
+        """
+        Sorts according to the index values.
+
+        :param level: Index level index or several index levels. None means using the whole index.
+        :param ascending: Value indicating whether the sorting order is from the smallest to \
+                          the biggest (default) or from the biggest to the smallest.
+        :param inplace: Value indicating whether we must update the current DataFrame instead of \
+                        returning a copy.
+        :param kind: Sorting algorithm.
+        :param na_position: Where we must place the nulls (NaNs, NaTs, etc.).
+        :param ignore_index: Value indicating whether the index in the resulting DataFrame will \
+                             be reset.
+        :param non_negative_hint: The index values referenced by `level` are all non-negative. \
+                                  This enables low-level optimization in multi-level mode.
+        :return: Sorted DataFrame.
+        """
+        index = self._index
+        levels: Hashable | list[Hashable]
+        if level is None:
+            levels = index
+        elif isinstance(level, (tuple, list)):
+            levels = [index[i] for i in level]
+        else:
+            if not isinstance(level, (int, np.int_)):
+                raise TypeError(f"Invalid index level type: {type(level)}")
+            levels = index[level]
+        return self.sort_values(
+            by=levels,
+            ascending=ascending,
+            inplace=inplace,
+            kind=kind,
+            na_position=na_position,
+            ignore_index=ignore_index,
+            non_negative_hint=non_negative_hint,
+        )
 
     def set_index(self, index: Any, inplace=False, drop=False) -> "DataFrame":
         """
