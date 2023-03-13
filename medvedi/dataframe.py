@@ -638,6 +638,32 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             return values == values
         return np.ones(len(values), dtype=bool)
 
+    def nonemin(self, column: Hashable) -> Any | None:
+        """Return the minimum value along the given column, ignoring NaN-s, or None if \
+        it doesn't exist."""
+        values = self[column]
+        if values.dtype == object:
+            values = values[is_not_null(values)]
+        if len(values) == 0:
+            return None
+        m = np.nanmin(values)
+        if m != m:
+            return None
+        return m
+
+    def nonemax(self, column: Hashable) -> Any | None:
+        """Return the maximum value along the given column, ignoring NaN-s, or None if \
+        it doesn't exist."""
+        values = self[column]
+        if values.dtype == object:
+            values = values[is_not_null(values)]
+        if len(values) == 0:
+            return None
+        m = np.nanmax(values)
+        if m != m:
+            return None
+        return m
+
     @property
     def iloc(self) -> Iloc:
         """Get row by absolute index."""
