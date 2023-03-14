@@ -6,12 +6,18 @@ from medvedi import DataFrame
 from medvedi.testing import assert_index_equal
 
 
+def test_index_properties():
+    df = DataFrame({"a": [0, 1, 2]}, index=("a",))
+    assert not df.index.empty
+    assert df.index.nlevels == 1
+    assert df.index.is_unique
+    assert len(df.index.duplicated()) == 0
+
+
 def test_set_index_name_existing():
     df = DataFrame({"a": [0, 1, 2]})
     new_df = df.set_index("a")
     assert new_df.index.names == ("a",)
-    assert new_df.index.nlevels == 1
-    assert not new_df.index.empty
     assert str(new_df.index) == "(a)"
     assert new_df.index.__sentry_repr__() == str(new_df.index)
     assert new_df is not df
@@ -99,9 +105,12 @@ def test_index_values():
         df.index.values
 
 
-def test_empty_index():
-    assert DataFrame({"a": []}, index="a").index.empty
-    assert DataFrame().index.empty
+@pytest.mark.parametrize("df", [DataFrame({"a": []}, index="a"), DataFrame()])
+def test_index_empty(df):
+    assert df.index.empty
+    assert df.index.is_unique
+    assert len(df.index.duplicated()) == 0
+    assert df.index.nlevels == (1 if df.columns else 0)
 
 
 def test_index_is_monotonic_increasing_true():
@@ -158,3 +167,10 @@ def test_index_assert_equal():
     df1 = DataFrame({"a": [0, 1, 2]}, index="a")
     df2 = DataFrame({"a": [0, 1, 2], "b": [5, 6, 7]}, index="a")
     assert_index_equal(df1.index, df2.index)
+
+
+def test_index_duplicates():
+    df = DataFrame({"a": [0, 1, 1, 2]}, index=("a",))
+    assert not df.index.is_unique
+    assert_array_equal(df.index.duplicated(), [2])
+    assert_array_equal(df.index.duplicated(keep="last"), [1])

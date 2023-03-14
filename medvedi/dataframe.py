@@ -44,6 +44,15 @@ class Index:
         return self._parent.empty
 
     @property
+    def is_unique(self) -> bool:
+        """Check whether the index doesn't contain duplicates."""
+        columns = self._parent._columns
+        if not columns:
+            return True
+        order, merged = DataFrame._order([columns[c] for c in self._parent._index])
+        return len(np.unique(merged[order])) == len(merged)
+
+    @property
     def is_monotonic_increasing(self) -> bool:
         """Check whether the index is sorted in ascending order."""
         index = self._parent._index
@@ -105,6 +114,30 @@ class Index:
         """Return all the index levels as numpy arrays."""
         parent = self._parent
         return tuple(parent[c] for c in self._parent._index)
+
+    def duplicated(self, keep: Literal["first", "last"] = "first") -> npt.NDArray[np.int_]:
+        """
+        Return the positions of the duplicate index records.
+
+        :param keep: Select all subsequent occurrences of the same record as duplicates if \
+                     "first". "last" selects all preceding occurrences of the same record as \
+                     duplicates.
+        :return: Positions of the duplicates.
+        """
+        columns = self._parent._columns
+        if not columns:
+            return np.array([], dtype=int)
+        order, merged = DataFrame._order([columns[c] for c in self._parent._index])
+        if keep == "last":
+            order = order[::-1]
+        _, first_found = np.unique(merged[order], return_index=True)
+        if len(first_found) < len(merged):
+            if keep == "last":
+                first_found = np.arange(len(merged), dtype=int)[order][first_found]
+            mask = np.ones(len(merged), dtype=bool)
+            mask[first_found] = False
+            return np.flatnonzero(mask)
+        return np.array([], dtype=int)
 
 
 @dataclass(frozen=True, slots=True)
