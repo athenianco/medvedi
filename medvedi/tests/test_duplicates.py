@@ -8,6 +8,9 @@ from medvedi.testing import assert_frame_equal
 
 def test_drop_duplicates_one_first():
     df = DataFrame({"a": [1, 2, 2, 3], "b": [0, 1, 2, 3]})
+    assert_array_equal(df.duplicated("a"), [2])
+    assert_array_equal(df.duplicated("a", keep="last"), [1])
+    assert len(df.duplicated()) == 0
     unique_df = df.copy()
     unique_df.drop_duplicates("a", inplace=True)
     assert_array_equal(unique_df["a"], [1, 2, 3])
@@ -41,6 +44,10 @@ def test_drop_duplicates_bad_column():
     df = DataFrame({"a": [1, 2, 2, 3], "b": [0, 1, 2, 3]})
     with pytest.raises(KeyError):
         df.drop_duplicates("c")
+    with pytest.raises(KeyError):
+        df.duplicated("c")
+    with pytest.raises(TypeError):
+        df.drop_duplicates(object())
 
 
 def test_drop_duplicates_one_index():
