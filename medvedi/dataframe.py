@@ -1106,7 +1106,11 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         mapped_bys = []
         for c in by:
             unique_values, inverse_indexes = np.unique(c, return_inverse=True)
-            if na_position == "first" and unique_values[-1] != unique_values[-1]:
+            if (
+                na_position == "first"
+                and len(unique_values)
+                and unique_values[-1] != unique_values[-1]
+            ):
                 inverse_indexes += 1
                 inverse_indexes[inverse_indexes == len(unique_values)] = 0
             mapped_bys.append(inverse_indexes)
