@@ -183,3 +183,12 @@ def test_join_two_float_object():
     assert_array_equal(df["a"], [3.1, 4.2, 5.3])
     assert_array_equal(df["b"], [8.3, 7.2, 6.1])
     assert_array_equal(df["c"], ["c", "b", "a"])
+
+
+def test_join_two_incompatible_index():
+    df1 = DataFrame(
+        {"i": [0, 1, 2], "a": np.array(["0", "1", "2"], dtype=object)}, index=("i", "a"),
+    )
+    df2 = DataFrame({"i": [2, 1, 0], "a": np.array(["2", "1", "0"], dtype="S")}, index=("i", "a"))
+    with pytest.raises(ValueError):
+        DataFrame.join(df1, df2)
