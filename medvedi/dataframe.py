@@ -1131,7 +1131,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
     ):
         if subset is None:
             subset = self._columns.keys()
-        elif subset in self._columns:
+        elif isinstance(subset, Hashable) and subset in self._columns:
             subset = (subset,)
         if not isinstance(subset, Iterable):
             raise TypeError(f"subset of columns is not recognized: {type(subset)}")
