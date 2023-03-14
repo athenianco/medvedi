@@ -995,8 +995,9 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             return cls()
         if len(dfs) > 255:
             raise ValueError(f"Cannot join more than 255 DataFrame-s, got {len(dfs)}")
-        if not isinstance(dfs[0], cls):
-            raise TypeError(f"Can only concatenate medvedi.DataFrame-s, got {type(dfs[0])}")
+        for df in dfs:
+            if not isinstance(df, cls):
+                raise TypeError(f"Can only concatenate medvedi.DataFrame-s, got {type(df)}")
         if not isinstance(suffixes, tuple):
             raise TypeError(f"`suffixes` must be a tuple, got {type(suffixes)}")
         if suffixes:
@@ -1012,10 +1013,11 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                 return dfs[0]
             return dfs[0].copy()
         indexes = [dfs[0]._index]
+        dtypes = [dfs[0]._columns[c].dtype for c in indexes[0]]
         for df in dfs[1:]:
-            if not isinstance(df, DataFrame):
-                raise TypeError(f"Joined objects must be DataFrame-s, got {type(df)}")
-            if df._index != indexes[0]:
+            if [df._columns[c].dtype for c in df._index] != dtypes and not (
+                (df.empty or dfs[0].empty) and len(df._index) == len(dtypes)
+            ):
                 raise ValueError(f"Incompatible indexes: {df._index} vs. {indexes[0]}")
             indexes.append(df._index)
         if indexes[0] == ():
