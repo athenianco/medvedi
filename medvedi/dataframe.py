@@ -127,17 +127,7 @@ class Index:
         columns = self._parent._columns
         if not columns:
             return np.array([], dtype=int)
-        order, merged = DataFrame._order([columns[c] for c in self._parent._index])
-        if keep == "last":
-            order = order[::-1]
-        _, first_found = np.unique(merged[order], return_index=True)
-        if len(first_found) < len(merged):
-            if keep == "last":
-                first_found = np.arange(len(merged), dtype=int)[order][first_found]
-            mask = np.ones(len(merged), dtype=bool)
-            mask[first_found] = False
-            return np.flatnonzero(mask)
-        return np.array([], dtype=int)
+        return self._parent.duplicated(self._parent._index, keep)
 
 
 @dataclass(frozen=True, slots=True)
@@ -469,7 +459,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             return self.reset_index() if ignore_index else self.copy()
         checked_types = (tuple, list, np.ndarray)
         repeat_counts = np.ones(len(values), dtype=int)
-        new_col = []
+        new_col: list[Any] = []
         for i, v in enumerate(values):
             if isinstance(v, checked_types):
                 repeat_counts[i] = len(v)
@@ -700,7 +690,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
 
     def drop_duplicates(
         self,
-        subset: Iterable[Hashable],
+        subset: Hashable | Iterable[Hashable] | None = None,
         keep: Literal["first", "last"] = "first",
         inplace: bool = False,
         ignore_index: bool = False,
@@ -710,24 +700,36 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
 
         We consider duplicates those rows which have the same values of columns in `subset`.
 
-        :param subset: Column key or several column keys.
+        :param subset: Column key or several column keys. None means all the columns.
         :param keep: "first" leaves the first encounters, while "last" leaves the last encounters.
         :param inplace: Update the current DataFrame instead of returning a deduplicated copy.
         :param ignore_index: Value indicating whether the resulting index will be reset.
+        :return: DataFrame with unique rows.
         """
         df = self if inplace else self.copy()
+        first_found = df._unique(subset, keep)
         if ignore_index:
             df._index = ()
-        by = [df[c] for c in subset]
-        order, merged = df._order(by, "stable")
-        if keep == "last":
-            order = order[::-1]
-        _, first_found = np.unique(merged[order], return_index=True)
-        if len(first_found) < len(merged):
-            if keep == "last":
-                first_found = np.arange(len(merged), dtype=int)[order][first_found]
+        if len(first_found) < len(df):
             return df.take(first_found, inplace=inplace)
         return df
+
+    def duplicated(
+        self,
+        subset: Hashable | Iterable[Hashable] | None = None,
+        keep: Literal["first", "last"] = "first",
+    ) -> npt.NDArray[np.int_]:
+        """
+        Return the indexes of duplicate rows.
+
+        :param subset: Column key or several column keys. None means all the columns.
+        :param keep: "first" leaves the first encounters, while "last" leaves the last encounters.
+        :return: Positions of the duplicates.
+        """
+        first_found = self._unique(subset, keep)
+        mask = np.ones(len(self), dtype=bool)
+        mask[first_found] = False
+        return np.flatnonzero(mask)
 
     def groupby(self, *by: Hashable | npt.ArrayLike) -> Grouper:
         """
@@ -1097,6 +1099,27 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             mapped_bys.append(inverse_indexes)
         merged = merge_to_str(*mapped_bys)
         return np.argsort(merged, kind=kind), merged
+
+    def _unique(
+        self,
+        subset: Hashable | Iterable[Hashable] | None,
+        keep: Literal["first", "last"],
+    ):
+        if subset is None:
+            subset = self._columns.keys()
+        elif subset in self._columns:
+            subset = (subset,)
+        if not isinstance(subset, Iterable):
+            raise TypeError(f"subset of columns is not recognized: {type(subset)}")
+        by = [self[c] for c in subset]
+        order, merged = self._order(by, "stable")
+        if keep == "last":
+            order = order[::-1]
+        _, first_found = np.unique(merged[order], return_index=True)
+        if len(first_found) < len(merged):
+            if keep == "last":
+                first_found = np.arange(len(merged), dtype=int)[order][first_found]
+        return first_found
 
     @staticmethod
     def _empty_array(length: int, dtype: np.dtype) -> np.ndarray:
