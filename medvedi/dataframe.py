@@ -162,7 +162,9 @@ class Grouper:
         >>> np.add.reduceat(df["b"], df.groupby("a").reduceat_indexes())
         array([ 9, 13, 27])
         """
-        indexes = np.empty(len(self.counts), dtype=int)
+        if (size := len(self.counts)) == 0:
+            return np.array([], dtype=int)
+        indexes = np.empty(size, dtype=int)
         indexes[0] = 0
         np.cumsum(self.counts[:-1], out=indexes[1:])
         return indexes
@@ -178,7 +180,9 @@ class Grouper:
         >>> df["a"][df.groupby("a").group_indexes()]
         array([1, 2, 3])
         """
-        indexes = np.empty(len(self.counts), dtype=int)
+        if (size := len(self.counts)) == 0:
+            return np.array([], dtype=int)
+        indexes = np.empty(size, dtype=int)
         indexes[0] = 0
         np.cumsum(self.counts[:-1], out=indexes[1:])
         return self.order[indexes]
