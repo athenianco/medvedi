@@ -58,11 +58,12 @@ def test_drop_duplicates_one_index():
     assert_array_equal(df.index.names, ())
 
 
-def test_drop_duplicates_two():
+@pytest.mark.parametrize("container", [tuple, list])
+def test_drop_duplicates_two(container):
     df = DataFrame(
         {"a": [1, 2, 2, 3], "b": np.array(["0", "1", "1", "3"], dtype="S1"), "c": [5, 6, 7, 8]},
     )
-    df.drop_duplicates(("a", "b"), inplace=True)
+    df.drop_duplicates(container(("a", "b")), inplace=True)
     assert_array_equal(df["a"], [1, 2, 3])
     assert_array_equal(df["b"], np.array(["0", "1", "3"], dtype="S1"))
     assert_array_equal(df["c"], [5, 6, 8])
