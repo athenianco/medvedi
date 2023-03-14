@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.testing import assert_array_equal
 import pytest
 
 from medvedi import DataFrame
@@ -36,3 +37,10 @@ def test_set_column_empty_scalar():
     df = DataFrame()
     df["b"] = 2
     assert len(df["b"]) == 0
+
+
+def test_set_column_existing_scalar():
+    df = DataFrame({"a": np.array([0, 1, 2], dtype=object)})
+    df["a"] = 2
+    assert_array_equal(df["a"], [2, 2, 2])
+    assert df["a"].dtype == object

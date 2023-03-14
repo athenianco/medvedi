@@ -347,6 +347,9 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                       provide an array copy as needed.
         """
         if np.isscalar(value):
+            if key in self._columns:
+                self._columns[key][:] = value
+                return
             value = np.full(len(self), value)
         else:
             value = np.atleast_1d(np.squeeze(np.asarray(value)))
