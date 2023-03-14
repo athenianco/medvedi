@@ -1020,9 +1020,12 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             return dfs[0].copy()
         indexes = [dfs[0]._index]
         dtypes = [dfs[0]._columns[c].dtype for c in indexes[0]]
+        first_empty = dfs[0].empty
         for df in dfs[1:]:
-            if [df._columns[c].dtype for c in df._index] != dtypes and not (
-                (df.empty or dfs[0].empty) and len(df._index) == len(dtypes)
+            if (
+                [df._columns[c].dtype for c in df._index] != dtypes
+                and not df.empty
+                and not first_empty
             ):
                 raise ValueError(f"Incompatible indexes: {df._index} vs. {indexes[0]}")
             indexes.append(df._index)
@@ -1030,8 +1033,9 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             raise ValueError("Joining requires an index")
         transposed_resolved_indexes_builder: list[list[np.ndarray]] = [[] for _ in indexes[0]]
         for index, df in zip(indexes, dfs):
-            for i, c in enumerate(index):
-                transposed_resolved_indexes_builder[i].append(df[c])
+            if not df.empty:
+                for i, c in enumerate(index):
+                    transposed_resolved_indexes_builder[i].append(df[c])
         transposed_resolved_indexes: list[np.ndarray] = [
             np.concatenate(vals, casting="unsafe") for vals in transposed_resolved_indexes_builder
         ]
