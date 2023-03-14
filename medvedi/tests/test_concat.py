@@ -1,3 +1,4 @@
+import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
 
@@ -78,3 +79,11 @@ def test_concat_index():
 def test_concat_copy():
     df = DataFrame({"a": [1, 2, 3]})
     assert DataFrame.concat(df, copy=True) is not df
+
+
+def test_concat_dtypes():
+    df = DataFrame({"a": [1, 2, 3]})
+    df = DataFrame.concat(df, DataFrame({"a": np.array([], dtype=object)}))
+    assert len(df) == 3
+    assert_array_equal(df["a"], [1, 2, 3])
+    assert df["a"].dtype == int

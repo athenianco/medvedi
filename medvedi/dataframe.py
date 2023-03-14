@@ -973,8 +973,9 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                 raise ValueError(f"Columns must match: {columns} vs. {df._columns.keys()}")
             if df._index != index and not ignore_index:
                 raise ValueError(f"Indexes must match: {index} vs. {df._index}")
-            for k, v in df._columns.items():
-                concat_columns[k].append(v)
+            if len(df):
+                for k, v in df._columns.items():
+                    concat_columns[k].append(v)
         concat_df = cls()
         concat_df._index = index if not ignore_index else ()
         concat_df._columns = {
