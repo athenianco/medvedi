@@ -87,3 +87,7 @@ def test_concat_dtypes():
     assert len(df) == 3
     assert_array_equal(df["a"], [1, 2, 3])
     assert df["a"].dtype == int
+
+
+def test_concat_empty():
+    assert DataFrame.concat(DataFrame({"a": []}), DataFrame({"a": []})).empty
