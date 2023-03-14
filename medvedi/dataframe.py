@@ -334,7 +334,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             return DataFrame({k: columns[k] for k in item}, index=self._index)
         return self._columns[item]
 
-    def __setitem__(self, key: Hashable, value: npt.ArrayLike) -> None:
+    def __setitem__(self, key: Hashable, value: Any) -> None:
         """
         Add or replace a column.
 
@@ -342,7 +342,10 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         :param value: Numpy array with column values. We set without copying, so the user should \
                       provide an array copy as needed.
         """
-        value = np.atleast_1d(np.squeeze(np.asarray(value)))
+        if np.isscalar(value):
+            value = np.full(len(self), value)
+        else:
+            value = np.atleast_1d(np.squeeze(np.asarray(value)))
         if value.ndim != 1:
             raise ValueError(f"numpy array must be one-dimensional, got shape {value.shape}")
         if len(self) != len(value) and self._columns:
