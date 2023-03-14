@@ -3,6 +3,7 @@ from numpy.testing import assert_array_equal
 import pytest
 
 from medvedi import DataFrame
+from medvedi.testing import assert_frame_equal
 
 
 def test_sort_values_one_ignore():
@@ -83,6 +84,12 @@ def test_sort_values_empty_by():
     df = DataFrame({"a": [3, 2, 1]})
     with pytest.raises(ValueError):
         df.sort_values([])
+
+
+@pytest.mark.parametrize("na_position", ["first", "last"])
+def test_sort_values_empty_df(na_position):
+    df = DataFrame({"a": [], "b": []})
+    assert_frame_equal(df, df.sort_values(["a", "b"], inplace=True, na_position=na_position))
 
 
 def test_sort_index_levels_none():
