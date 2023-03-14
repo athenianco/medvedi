@@ -85,6 +85,17 @@ class Index:
         return str(self)
 
     @property
+    def name(self) -> Hashable:
+        """
+        Return the column key that forms the index.
+
+        If the index is multi-level, raise ValueError.
+        """
+        if len(index := self._parent._index) != 1:
+            raise ValueError(f"Index must be 1-D to use .name, have {len(index)}-D")
+        return index[0]
+
+    @property
     def names(self) -> tuple[Hashable, ...]:
         """Return the column keys that form the index."""
         return self._parent._index
@@ -331,7 +342,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         :param value: Numpy array with column values. We set without copying, so the user should \
                       provide an array copy as needed.
         """
-        value = np.squeeze(np.asarray(value))
+        value = np.atleast_1d(np.squeeze(np.asarray(value)))
         if value.ndim != 1:
             raise ValueError(f"numpy array must be one-dimensional, got shape {value.shape}")
         if len(self) != len(value) and self._columns:

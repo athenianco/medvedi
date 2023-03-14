@@ -12,6 +12,7 @@ def test_index_properties():
     assert df.index.nlevels == 1
     assert df.index.is_unique
     assert len(df.index.duplicated()) == 0
+    assert df.index.name == "a"
 
 
 def test_set_index_name_existing():
@@ -47,6 +48,8 @@ def test_set_index_name_clash_2d():
     df = DataFrame({"a": [0, 1, 2]})
     df.set_index([[5, 6, 7], ["a", "b", "c"]], inplace=True)
     assert len(df.index.names) == 2
+    with pytest.raises(ValueError):
+        df.index.name
     with pytest.raises(ValueError):
         df.set_index([[5, 6, 7], ["a", "b", "c"]], inplace=True, drop=False)
     df.set_index([[5, 6, 7], ["x", "y", "z"]], inplace=True, drop=True)
@@ -111,6 +114,9 @@ def test_index_empty(df):
     assert df.index.is_unique
     assert len(df.index.duplicated()) == 0
     assert df.index.nlevels == (1 if df.columns else 0)
+    if not df.columns:
+        with pytest.raises(ValueError):
+            df.index.name
 
 
 def test_index_is_monotonic_increasing_true():
