@@ -423,6 +423,33 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
 
         return df
 
+    def explode(self, column: Hashable, ignore_index: bool = False) -> "DataFrame":
+        """
+        Flatten a column with list-like elements, replicating other column values.
+
+        :param column: Column with list-likes inside that should be transformed.
+        :param ignore_index: Value indicating whether the index must be reset.
+        :return: DataFrame with >= rows than the origin.
+        """
+        values = self[column]
+        if values.dtype != object:
+            return self.reset_index() if ignore_index else self.copy()
+        checked_types = (tuple, list, np.ndarray)
+        repeat_counts = np.ones(len(values), dtype=int)
+        new_col = []
+        for i, v in enumerate(values):
+            if isinstance(v, checked_types):
+                repeat_counts[i] = len(v)
+                new_col.extend(v)
+            else:
+                new_col.append(v)
+        columns = {
+            k: np.repeat(v, repeat_counts) if k != column else np.asarray(new_col)
+            for k, v in self._columns.items()
+        }
+        df = DataFrame(columns, index=self._index if not ignore_index else None)
+        return df
+
     @property
     def index(self) -> Index:
         """Return the associated index."""
