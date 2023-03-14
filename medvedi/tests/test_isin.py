@@ -12,12 +12,13 @@ def test_in_bad_column():
 
 def test_in_bad_dtype():
     with pytest.raises(ValueError):
-        DataFrame({"a": [1, 2, 3]}).isin("a", [1.3, 2.5])
+        DataFrame({"a": [1, 2, 3]}).isin("a", ["x", "y"])
 
 
 def test_in_int():
     df = DataFrame({"a": [1, 2, 3]})
     assert_array_equal(df.isin("a", [2, 3, 4]), [False, True, True])
+    assert_array_equal(df.isin("a", [2.1, 3.2, 4.3]), [False, True, True])
 
 
 def test_in_s():
@@ -33,6 +34,7 @@ def test_in_u():
 def test_in_object():
     df = DataFrame({"a": np.array([1, 2, 3], dtype=object)})
     assert_array_equal(df.isin("a", np.array([2, 3, 4], dtype=object)), [False, True, True])
+    assert_array_equal(df.isin("a", [2, 3, 4]), [False, True, True])
 
 
 def test_in_invert():
