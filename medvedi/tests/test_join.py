@@ -50,10 +50,21 @@ def test_join_bullshit():
         DataFrame.join(how="xxx")
 
 
-def test_join_empty():
+@pytest.mark.parametrize("how", ["left", "inner"])
+def test_join_empty(how):
     assert DataFrame.join(
-        DataFrame({"a": []}, index="a"), DataFrame({"a": [0, 1, 2]}, index="a"),
+        DataFrame({"a": []}, index="a"), DataFrame({"a": [0, 1, 2]}, index="a"), how=how,
     ).empty
+
+    assert DataFrame.join(
+        DataFrame({"a": []}, index="a"), DataFrame({"a": [0.1, 1.2, 2.3]}, index="a"), how=how,
+    ).empty
+
+    assert len(
+        DataFrame.join(
+            DataFrame({"a": [0.1, 1.2, 2.3]}, index="a"), DataFrame({"a": []}, index="a"), how=how,
+        )["a"],
+    ) == (3 if how == "left" else 0)
 
 
 def test_join_two_disjoint():
