@@ -965,7 +965,8 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             return dfs[0].copy()
         index = dfs[0]._index
         columns = dfs[0]._columns.keys()
-        concat_columns = {k: [v] for k, v in dfs[0]._columns.items()}
+        empty = dfs[0].empty
+        concat_columns = {k: [v] if not empty else [] for k, v in dfs[0]._columns.items()}
         for df in dfs[1:]:
             if not isinstance(df, cls):
                 raise TypeError(f"Can only concatenate medvedi.DataFrame-s, got {type(df)}")
@@ -979,7 +980,8 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         concat_df = cls()
         concat_df._index = index if not ignore_index else ()
         concat_df._columns = {
-            k: np.concatenate(v, casting="unsafe") for k, v in concat_columns.items()
+            k: np.concatenate(v, casting="unsafe") if len(v) else dfs[0]._columns[k]
+            for k, v in concat_columns.items()
         }
         return concat_df
 
