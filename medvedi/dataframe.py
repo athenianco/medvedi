@@ -802,9 +802,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         :return: Boolean mask, same shape as `column`.
         """
         values = self[column]
-        haystack = np.asarray(haystack)
-        if values.dtype != haystack.dtype:
-            raise ValueError(f"dtypes mismatch: {values.dtype} vs. {haystack.dtype}")
+        haystack = np.asarray(haystack, dtype=values.dtype)
         kind = values.dtype.kind
         if kind == "S" or kind == "U":
             mask = in1d_str(values, haystack)
