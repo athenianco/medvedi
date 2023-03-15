@@ -180,6 +180,7 @@ def in1d_str(
     ndarray trial not None,
     ndarray dictionary not None,
     bint skip_leading_zeros = False,
+    bint verbatim = False,
 ) -> np.ndarray:
     cdef:
         np_dtype dtype_trial = <np_dtype>PyArray_DESCR(trial)
@@ -188,10 +189,16 @@ def in1d_str(
     assert PyArray_NDIM(dictionary) == 1
     assert dtype_trial.kind == b"S" or dtype_trial.kind == b"U"
     assert dtype_trial.kind == dtype_dict.kind
-    return _in1d_str(trial, dictionary, dtype_trial.kind == b"S", skip_leading_zeros)
+    return _in1d_str(trial, dictionary, dtype_trial.kind == b"S", skip_leading_zeros, verbatim)
 
 
-cdef ndarray _in1d_str(ndarray trial, ndarray dictionary, bint is_char, int skip_leading_zeros):
+cdef ndarray _in1d_str(
+    ndarray trial,
+    ndarray dictionary,
+    bint is_char,
+    int skip_leading_zeros,
+    int verbatim,
+):
     cdef:
         char *data_trial = <char *>PyArray_DATA(trial)
         char *data_dictionary = <char *> PyArray_DATA(dictionary)
@@ -216,24 +223,30 @@ cdef ndarray _in1d_str(ndarray trial, ndarray dictionary, bint is_char, int skip
         if is_char:
             for i in range(length):
                 s = data_dictionary + i * stride
-                nullptr = s
-                if skip_leading_zeros:
-                    while nullptr < (s + itemsize) and nullptr[0] == 0:
-                        nullptr += 1
-                nullptr = <char *> memchr(nullptr, 0, itemsize + (s - nullptr))
-                if nullptr:
-                    size = nullptr - s
-                else:
+                if verbatim:
                     size = itemsize
+                else:
+                    nullptr = s
+                    if skip_leading_zeros:
+                        while nullptr < (s + itemsize) and nullptr[0] == 0:
+                            nullptr += 1
+                    nullptr = <char *> memchr(nullptr, 0, itemsize + (s - nullptr))
+                    if nullptr:
+                        size = nullptr - s
+                    else:
+                        size = itemsize
                 deref(hashtable).emplace(s, size)
         else:
             for i in range(length):
                 s = data_dictionary + i * stride
-                nullptr = <char *> wmemchr(<wchar_t *>s, 0, itemsize >> 2)
-                if nullptr:
-                    size = nullptr - s
-                else:
+                if verbatim:
                     size = itemsize
+                else:
+                    nullptr = <char *> wmemchr(<wchar_t *>s, 0, itemsize >> 2)
+                    if nullptr:
+                        size = nullptr - s
+                    else:
+                        size = itemsize
                 deref(hashtable).emplace(s, size)
 
         itemsize = dtype_trial.itemsize
@@ -248,24 +261,30 @@ cdef ndarray _in1d_str(ndarray trial, ndarray dictionary, bint is_char, int skip
         if is_char:
             for i in range(length):
                 s = data_trial + i * stride
-                nullptr = s
-                if skip_leading_zeros:
-                    while nullptr < (s + itemsize) and nullptr[0] == 0:
-                        nullptr += 1
-                nullptr = <char *> memchr(nullptr, 0, itemsize + (s - nullptr))
-                if nullptr:
-                    size = nullptr - s
-                else:
+                if verbatim:
                     size = itemsize
+                else:
+                    nullptr = s
+                    if skip_leading_zeros:
+                        while nullptr < (s + itemsize) and nullptr[0] == 0:
+                            nullptr += 1
+                    nullptr = <char *> memchr(nullptr, 0, itemsize + (s - nullptr))
+                    if nullptr:
+                        size = nullptr - s
+                    else:
+                        size = itemsize
                 output[i] = deref(hashtable).find(string_view(s, size)) != end
         else:
             for i in range(length):
                 s = data_trial + i * stride
-                nullptr = <char *> wmemchr(<wchar_t *> s, 0, itemsize >> 2)
-                if nullptr:
-                    size = nullptr - s
-                else:
+                if verbatim:
                     size = itemsize
+                else:
+                    nullptr = <char *> wmemchr(<wchar_t *> s, 0, itemsize >> 2)
+                    if nullptr:
+                        size = nullptr - s
+                    else:
+                        size = itemsize
                 output[i] = deref(hashtable).find(string_view(s, size)) != end
     return result
 
