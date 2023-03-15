@@ -33,6 +33,10 @@ class Index:
         """Support str()."""
         return "(" + ", ".join(map(str, self.names)) + ")"
 
+    def __sentry_repr__(self):
+        """Support Sentry."""
+        return str(self)
+
     @property
     def nlevels(self) -> int:
         """Return the number of index levels."""
@@ -79,10 +83,6 @@ class Index:
             else:
                 return False
         return True
-
-    def __sentry_repr__(self):
-        """Support Sentry."""
-        return str(self)
 
     @property
     def name(self) -> Hashable:
@@ -139,6 +139,27 @@ class Index:
         if not columns:
             return np.array([], dtype=int)
         return self._parent.duplicated(self._parent._index, keep)
+
+    def diff(self, other: "Index") -> npt.NDArray[np.int_]:
+        """
+        Calculate positions of the unique index values that are not present in the other index.
+
+        :param other: Index with values which should be excluded.
+        :return: Positions of unique values in the index not present in the other index.
+        """
+        if not isinstance(other, Index):
+            raise TypeError(f"other must be a medvedi.Index, got {type(other)}")
+        columns = self._parent._columns
+        order_self, merged_self = DataFrame._order([columns[i] for i in self._parent._index])
+        columns = other._parent._columns
+        order_other, merged_other = DataFrame._order([columns[i] for i in other._parent._index])
+        _, first_found = np.unique(
+            np.concatenate([merged_other[order_other], merged_self[order_self]]),
+            return_index=True,
+        )
+        return np.sort(
+            order_self[first_found[first_found >= len(merged_other)] - len(merged_other)],
+        )
 
 
 @dataclass(frozen=True, slots=True)
