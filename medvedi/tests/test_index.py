@@ -180,3 +180,16 @@ def test_index_duplicates():
     assert not df.index.is_unique
     assert_array_equal(df.index.duplicated(), [2])
     assert_array_equal(df.index.duplicated(keep="last"), [1])
+
+
+def test_index_diff_smoke():
+    df1 = DataFrame({"a": [0, 1, 1, 4, 2]}, index="a")
+    df2 = DataFrame({"a": [1, 2, 2, 3]}, index="a")
+    assert_array_equal(df1.index.diff(df2.index), [0, 3])
+
+
+def test_index_diff_bad_type():
+    df1 = DataFrame({"a": [0, 1, 1, 2]}, index="a")
+    df2 = DataFrame({"a": [1, 2, 2, 3]}, index="a")
+    with pytest.raises(TypeError):
+        df1.index.diff(df2)
