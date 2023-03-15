@@ -219,3 +219,13 @@ def test_join_two_empty():
     joined = DataFrame.join(*dfs)
     assert isinstance(joined["a"], np.ndarray)
     assert joined["a"].dtype == object
+
+
+def test_join_left_dupes():
+    df1 = DataFrame({"a": [2, 1, 1], "c": [0, 1, 2]}, index="a")
+    df2 = DataFrame({"A": [1], "b": ["x"]}, index="A")
+    joined = DataFrame.join(df1, df2)
+    assert joined.index.name == "a"
+    assert_array_equal(joined.index.values, [1, 1, 2])
+    assert_array_equal(joined["b"], ["x", "x", ""])
+    assert_array_equal(joined["c"], [1, 2, 0])
