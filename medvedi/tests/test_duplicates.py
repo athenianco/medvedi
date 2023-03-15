@@ -23,6 +23,11 @@ def test_drop_duplicates_one_first():
     assert_array_equal(df["a"], [1, 2, 2, 3])
 
 
+def test_drop_duplicates_one_order():
+    df = DataFrame({"a": [3, 3, 1, 2, 2, 3]})
+    assert_array_equal(df.duplicated("a"), [1, 4, 5])
+
+
 def test_drop_duplicates_one_last():
     df = DataFrame({"a": [1, 2, 2, 3], "b": [0, 1, 2, 3]})
     df.drop_duplicates("a", inplace=True, keep="last")

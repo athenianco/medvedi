@@ -1173,10 +1173,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         if keep == "last":
             order = order[::-1]
         _, first_found = np.unique(merged[order], return_index=True)
-        if len(first_found) < len(merged):
-            if keep == "last":
-                first_found = np.arange(len(merged), dtype=int)[order][first_found]
-        return first_found
+        return order[first_found]
 
     @staticmethod
     def _empty_array(length: int, dtype: np.dtype) -> np.ndarray:
