@@ -67,6 +67,15 @@ def test_join_empty(how):
     ) == (3 if how == "left" else 0)
 
 
+@pytest.mark.parametrize("how", ["left", "inner"])
+def test_join_total_empty(how):
+    joined = DataFrame.join(
+        DataFrame({"a": []}, index="a"), DataFrame({"a": [], "b": []}, index="a"), how=how,
+    )
+    assert joined.empty
+    assert joined.columns == ("a", "b")
+
+
 def test_join_two_disjoint():
     df1 = DataFrame({"i": [0, 1, 2], "a": [3, 4, 5]}, index="i")
     df2 = DataFrame({"i": [2, 1, 0], "b": [6, 7, 8]}, index="i")

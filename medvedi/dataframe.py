@@ -1042,7 +1042,8 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                 for i, c in enumerate(index):
                     transposed_resolved_indexes_builder[i].append(df[c])
         transposed_resolved_indexes: list[np.ndarray] = [
-            np.concatenate(vals, casting="unsafe") for vals in transposed_resolved_indexes_builder
+            np.concatenate(vals, casting="unsafe") if vals else []
+            for vals in transposed_resolved_indexes_builder
         ]
         del transposed_resolved_indexes_builder
         if len(transposed_resolved_indexes) == 1:
@@ -1073,7 +1074,10 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             inverse_index_map[leave_mask] = np.arange(leave_mask.sum())
             inverse_map = inverse_index_map[inverse_map]
             del inverse_index_map
-        joined_columns = {i: c[index_map] for i, c in zip(indexes[0], transposed_resolved_indexes)}
+        joined_columns = {
+            i: c[index_map] if len(index_map) else c[:0]
+            for i, c in zip(indexes[0], transposed_resolved_indexes)
+        }
         pos = 0
         mask = None
         for i, (df, suffix) in enumerate(zip(dfs, suffixes)):
