@@ -212,3 +212,10 @@ def test_join_two_incompatible_index():
     df2 = DataFrame({"i": [2, 1, 0], "a": np.array(["2", "1", "0"], dtype="S")}, index=("i", "a"))
     with pytest.raises(ValueError):
         DataFrame.join(df1, df2)
+
+
+def test_join_two_empty():
+    dfs = [DataFrame({"a": np.array([], dtype=object)}, index="a") for _ in range(2)]
+    joined = DataFrame.join(*dfs)
+    assert isinstance(joined["a"], np.ndarray)
+    assert joined["a"].dtype == object

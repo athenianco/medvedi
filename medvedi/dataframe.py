@@ -1042,8 +1042,8 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                 for i, c in enumerate(index):
                     transposed_resolved_indexes_builder[i].append(df[c])
         transposed_resolved_indexes: list[np.ndarray] = [
-            np.concatenate(vals, casting="unsafe") if vals else []
-            for vals in transposed_resolved_indexes_builder
+            np.concatenate(vals, casting="unsafe") if vals else dfs[0]._columns[c]
+            for vals, c in zip(transposed_resolved_indexes_builder, indexes[0])
         ]
         del transposed_resolved_indexes_builder
         if len(transposed_resolved_indexes) == 1:
