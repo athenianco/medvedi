@@ -1078,9 +1078,12 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                 ]
                 merged_index = merge_to_str(*mapped_indexes)
         _, index_map, inverse_map = np.unique(merged_index, return_index=True, return_inverse=True)
-        leave_mask = None
+        leave_mask = repeats = None
         if how == "left":
             leave_mask = index_map < len(dfs[0])
+            _, repeats = np.unique(inverse_map[: len(dfs[0])], return_counts=True)
+            if (repeats == 1).all():
+                repeats = None
         elif how == "inner":
             encounters = np.zeros(len(index_map), dtype=np.uint8)
             pos = 0
@@ -1096,11 +1099,14 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             inverse_map = inverse_index_map[inverse_map]
             del inverse_index_map
         joined_columns = {
-            i: c[index_map] if len(index_map) else c[:0]
+            i: c[index_map if repeats is None else np.repeat(index_map, repeats)]
+            if len(index_map)
+            else c[:0]
             for i, c in zip(indexes[0], transposed_resolved_indexes)
         }
         pos = 0
         mask = None
+        left_added_columns = set()
         for i, (df, suffix) in enumerate(zip(dfs, suffixes)):
             df_len = len(df)
             values_order = inverse_map[pos : pos + df_len]
@@ -1108,20 +1114,30 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             if must_mask := (how != "outer" and (i > 0 or how != "left")):
                 mask = values_order >= 0
                 values_order = values_order[mask]
+            elif must_mask := (repeats is not None):
+                mask = np.argsort(values_order, kind="stable")
+                values_order = slice(None)
             for c, values in df._columns.items():
                 if c in df._index:
                     continue
                 if suffix is not None:
                     c = str(c) + suffix
+                if i > 0 and how == "left":
+                    left_added_columns.add(c)
                 if c not in joined_columns:
                     joined_columns[c] = joined_values = cls._empty_array(
-                        len(index_map), values.dtype,
+                        len(index_map) if i > 0 or repeats is None else df_len, values.dtype,
                     )
                 else:
                     joined_values = joined_columns[c]
                 if must_mask:
                     values = values[mask]
                 joined_values[values_order] = values
+
+        if repeats is not None:
+            for c in left_added_columns:
+                joined_columns[c] = np.repeat(joined_columns[c], repeats)
+
         joined = DataFrame()
         joined._index = indexes[0]
         joined._columns = joined_columns
