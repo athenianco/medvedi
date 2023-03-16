@@ -59,6 +59,15 @@ class Index:
     @property
     def is_monotonic_increasing(self) -> bool:
         """Check whether the index is sorted in ascending order."""
+        return self._is_monotonic("__ge__")
+
+    @property
+    def is_monotonic_decreasing(self) -> bool:
+        """Check whether the index is sorted in descending order."""
+        return self._is_monotonic("__le__")
+
+    def _is_monotonic(self, op: str) -> bool:
+        """Check whether the index is sorted."""
         index = self._parent._index
         columns = self._parent._columns
         last_level = len(index) - 1
@@ -67,7 +76,7 @@ class Index:
             values = columns[level]
             if mask is not None:
                 values = values[mask]
-            if (values[1:] >= values[:-1]).all():
+            if getattr(values[1:], op)(values[:-1]).all():
                 if i == last_level or len(values) == 1:
                     return True
                 if mask is None:

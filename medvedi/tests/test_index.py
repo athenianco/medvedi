@@ -169,6 +169,45 @@ def test_index_is_monotonic_increasing_empty():
     assert df.index.is_monotonic_increasing
 
 
+def test_index_is_monotonic_decreasing_true():
+    df = DataFrame({"a": [2, 1, 0]}, index="a")
+    assert df.index.is_monotonic_decreasing
+
+    df = DataFrame({"a": [1, 1, 0]}, index="a")
+    assert df.index.is_monotonic_decreasing
+
+    df = DataFrame({"a": [1, 1, 0], "b": [6, 5, 50]}, index=("a", "b"))
+    assert df.index.is_monotonic_decreasing
+
+    df = DataFrame({"a": [1, 1, 0], "b": [5, 5, 50]}, index=("a", "b"))
+    assert df.index.is_monotonic_decreasing
+
+    df = DataFrame({"a": [2, 1, 0], "b": [5, 6, 50]}, index=("a", "b"))
+    assert df.index.is_monotonic_decreasing
+
+
+def test_index_is_monotonic_decreasing_false():
+    df = DataFrame({"a": [2, 3, 0]}, index="a")
+    assert not df.index.is_monotonic_decreasing
+
+    df = DataFrame({"a": [1, 1, 0], "b": [5, 6, 50]}, index=("a", "b"))
+    assert not df.index.is_monotonic_decreasing
+
+
+def test_index_is_monotonic_decreasing_3d():
+    df = DataFrame(
+        {"a": [2, 1, 1, 0], "b": [0, 5.1, 5.1, 50.3], "c": ["", "b", "a", "x"]},
+        index=("a", "b", "c"),
+    )
+    assert df.index.is_monotonic_decreasing
+
+    df = DataFrame(
+        {"a": [2, 1, 1, 0], "b": [0, 5.1, 5.1, 50.3], "c": ["", "a", "b", "x"]},
+        index=("a", "b", "c"),
+    )
+    assert not df.index.is_monotonic_decreasing
+
+
 def test_index_assert_equal():
     df1 = DataFrame({"a": [0, 1, 2]}, index="a")
     df2 = DataFrame({"a": [0, 1, 2], "b": [5, 6, 7]}, index="a")
