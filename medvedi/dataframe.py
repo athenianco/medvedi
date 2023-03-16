@@ -457,6 +457,33 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         df._index = self._index
         return df
 
+    def sample(
+        self,
+        n: int | None = None,
+        frac: float | int | None = None,
+        replace: bool = False,
+        weights: npt.NDArray[np.float_] | None = None,
+        ignore_index: bool = False,
+    ):
+        """
+        Return a random sample of rows in a new DataFrame.
+
+        :param n: Number of rows to sample. Cannot be passed together with `frac`.
+        :param frac: Ratio of rows to sample. 1 == length. Cannot be passed together with `n`.
+        :param replace: Sample with replacement.
+        :param weights: The probabilities associated with each row.
+        :param ignore_index: Reset the index in the sampled DataFrame.
+        """
+        if (frac is None) == (n is None):
+            raise ValueError("Must define one and only one of `n` and `frac`")
+        if frac is not None:
+            n = int(len(self) * frac)
+        indexes = np.random.choice(np.arange(len(self), dtype=int), n, replace=replace, p=weights)
+        df = self.take(indexes)
+        if ignore_index:
+            df.reset_index(inplace=True)
+        return df
+
     def astype(
         self,
         dtype: np.dtype | str | type | Mapping[Hashable, np.dtype | str | type],

@@ -229,3 +229,11 @@ def test_join_left_dupes():
     assert_array_equal(joined.index.values, [1, 1, 2])
     assert_array_equal(joined["b"], ["x", "x", ""])
     assert_array_equal(joined["c"], [1, 2, 0])
+
+
+def test_join_outer_left_empty():
+    df1 = DataFrame({"a": []}, index="a")
+    df2 = DataFrame({"a": [0, 1], "b": [4, 5]}, index="a")
+    joined = DataFrame.join(df1, df2, how="outer")
+    assert_array_equal(joined["a"], [0, 1])
+    assert_array_equal(joined["b"], [4, 5])
