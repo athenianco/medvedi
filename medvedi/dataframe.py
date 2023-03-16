@@ -450,7 +450,10 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
 
         if not inplace:
             return type(self)(
-                {k: v[mask_or_indexes] for k, v in self._columns.items()},
+                {
+                    k: v[mask_or_indexes] if len(mask_or_indexes) else v[:0]
+                    for k, v in self._columns.items()
+                },
                 index=self._index,
                 check=False,
             )
