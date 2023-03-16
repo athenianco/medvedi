@@ -11,7 +11,7 @@ def test_index_properties():
     assert not df.index.empty
     assert df.index.nlevels == 1
     assert df.index.is_unique
-    assert len(df.index.duplicated()) == 0
+    assert df.index.duplicated().sum() == 0
     assert df.index.name == "a"
 
 
@@ -112,7 +112,7 @@ def test_index_values():
 def test_index_empty(df):
     assert df.index.empty
     assert df.index.is_unique
-    assert len(df.index.duplicated()) == 0
+    assert df.index.duplicated().sum() == 0
     assert df.index.nlevels == (1 if df.columns else 0)
     if not df.columns:
         with pytest.raises(ValueError):
@@ -217,8 +217,8 @@ def test_index_assert_equal():
 def test_index_duplicates():
     df = DataFrame({"a": [0, 1, 1, 2]}, index=("a",))
     assert not df.index.is_unique
-    assert_array_equal(df.index.duplicated(), [2])
-    assert_array_equal(df.index.duplicated(keep="last"), [1])
+    assert_array_equal(df.index.duplicated(), [False, False, True, False])
+    assert_array_equal(df.index.duplicated(keep="last"), [False, True, False, False])
 
 
 def test_index_diff_smoke():

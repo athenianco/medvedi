@@ -135,7 +135,7 @@ class Index:
         parent = self._parent
         return tuple(parent[c] for c in self._parent._index)
 
-    def duplicated(self, keep: Literal["first", "last"] = "first") -> npt.NDArray[np.int_]:
+    def duplicated(self, keep: Literal["first", "last"] = "first") -> npt.NDArray[np.bool_]:
         """
         Return the positions of the duplicate index records.
 
@@ -146,7 +146,7 @@ class Index:
         """
         columns = self._parent._columns
         if not columns:
-            return np.array([], dtype=int)
+            return np.array([], dtype=bool)
         return self._parent.duplicated(self._parent._index, keep)
 
     def diff(self, other: "Index") -> npt.NDArray[np.int_]:
@@ -796,18 +796,18 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         self,
         subset: Hashable | Iterable[Hashable] | None = None,
         keep: Literal["first", "last"] = "first",
-    ) -> npt.NDArray[np.int_]:
+    ) -> npt.NDArray[np.bool_]:
         """
-        Return the indexes of duplicate rows.
+        Return the boolean mask of duplicate rows.
 
         :param subset: Column key or several column keys. None means all the columns.
         :param keep: "first" leaves the first encounters, while "last" leaves the last encounters.
-        :return: Positions of the duplicates.
+        :return: Boolean mask with True standing at the positions of duplicates.
         """
         first_found = self._unique(subset, keep)
         mask = np.ones(len(self), dtype=bool)
         mask[first_found] = False
-        return np.flatnonzero(mask)
+        return mask
 
     def groupby(self, *by: Hashable | npt.ArrayLike) -> Grouper:
         """
