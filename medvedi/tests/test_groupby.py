@@ -41,9 +41,10 @@ def test_groupby_bad_column():
 
 
 def test_groupby_reduceat():
-    df = DataFrame({"a": [1, 1, 2, 2, 3, 3, 3], "b": [4, 5, 6, 7, 8, 9, 10]})
-    agg = np.add.reduceat(df["b"], df.groupby("a").reduceat_indexes())
-    assert_array_equal(agg, [9, 13, 27])
+    df = DataFrame({"a": [3, 3, 3, 2, 2, 1, 1], "b": [9, 10, 7, 8, 4, 5, 6]})
+    grouper = df.groupby("a")
+    agg = np.add.reduceat(df["b"][grouper.order], grouper.reduceat_indexes())
+    assert_array_equal(agg, [11, 12, 26])
 
 
 def test_groupby_external():

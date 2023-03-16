@@ -188,9 +188,10 @@ class Grouper:
         Calculate the indexes for ufunc.reduceat aggregation.
 
         Usage:
-        >>> df = DataFrame({"a": [1, 1, 2, 2, 3, 3, 3], "b": [4, 5, 6, 7, 8, 9, 10]})
-        >>> np.add.reduceat(df["b"], df.groupby("a").reduceat_indexes())
-        array([ 9, 13, 27])
+        >>> df = DataFrame({"a": [3, 3, 3, 2, 2, 1, 1], "b": [9, 10, 7, 8, 4, 5, 6]})
+        >>> grouper = df.groupby("a")
+        >>> np.add.reduceat(df["b"][grouper.order], grouper.reduceat_indexes())
+        array([11, 12, 26])
         """
         if (size := len(self.counts)) == 0:
             return np.array([], dtype=int)
