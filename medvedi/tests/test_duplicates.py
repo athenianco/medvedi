@@ -8,9 +8,9 @@ from medvedi.testing import assert_frame_equal
 
 def test_drop_duplicates_one_first():
     df = DataFrame({"a": [1, 2, 2, 3], "b": [0, 1, 2, 3]})
-    assert_array_equal(df.duplicated("a"), [2])
-    assert_array_equal(df.duplicated("a", keep="last"), [1])
-    assert len(df.duplicated()) == 0
+    assert_array_equal(df.duplicated("a"), [False, False, True, False])
+    assert_array_equal(df.duplicated("a", keep="last"), [False, True, False, False])
+    assert df.duplicated().sum() == 0
     unique_df = df.copy()
     unique_df.drop_duplicates("a", inplace=True)
     assert_array_equal(unique_df["a"], [1, 2, 3])
@@ -25,7 +25,7 @@ def test_drop_duplicates_one_first():
 
 def test_drop_duplicates_one_order():
     df = DataFrame({"a": [3, 3, 1, 2, 2, 3]})
-    assert_array_equal(df.duplicated("a"), [1, 4, 5])
+    assert_array_equal(df.duplicated("a"), [False, True, False, False, True, True])
 
 
 def test_drop_duplicates_one_last():
