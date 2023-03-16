@@ -367,7 +367,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         :param value: Numpy array with column values. We set without copying, so the user should \
                       provide an array copy as needed.
         """
-        if np.isscalar(value):
+        if np.isscalar(value) or value is None:
             if key in self._columns:
                 self._columns[key][:] = value
                 return

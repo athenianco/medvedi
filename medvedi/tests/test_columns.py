@@ -33,9 +33,14 @@ def test_set_column_scalar():
     assert (df["b"] == 2).all()
 
 
-def test_set_column_empty_scalar():
+@pytest.mark.parametrize("value", [2, None])
+def test_set_column_empty_scalar(value):
     df = DataFrame()
-    df["b"] = 2
+    df["b"] = value
+    assert len(df["b"]) == 0
+
+    df = DataFrame({"b": []})
+    df["b"] = value
     assert len(df["b"]) == 0
 
 
