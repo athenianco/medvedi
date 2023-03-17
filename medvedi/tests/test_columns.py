@@ -26,6 +26,12 @@ def test_delete_column_bad():
         del df["b"]
 
 
+def test_delete_column_index():
+    df = DataFrame({"a": [0, 1, 2]}, index="a")
+    with pytest.raises(ValueError):
+        del df["a"]
+
+
 def test_set_column_scalar():
     df = DataFrame({"a": [0, 1, 2]})
     df["b"] = 2

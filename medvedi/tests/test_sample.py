@@ -17,3 +17,11 @@ def test_sample_frac():
     sampled = df.sample(frac=0.5)
     assert len(sampled) == 2
     assert len(sampled.unique("a")) == 2
+
+
+def test_sample_n_frac_error():
+    df = DataFrame({"a": [0, 1, 2, 3]})
+    with pytest.raises(ValueError):
+        df.sample(n=1, frac=0.5)
+    with pytest.raises(ValueError):
+        df.sample()

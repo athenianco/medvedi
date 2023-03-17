@@ -10,4 +10,4 @@ def test_iterrows_smoke():
 
 def test_dataframe_iter():
     assert list(DataFrame()) == []
-    assert [a.tolist() for a in DataFrame({"a": [0, 1, 2]})] == [[0, 1, 2]]
+    assert list(DataFrame({"a": [0, 1, 2]})) == ["a"]
