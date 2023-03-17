@@ -592,6 +592,11 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         """Return the column keys."""
         return tuple(self._columns)
 
+    @property
+    def dtype(self) -> dict[Hashable, np.dtype]:
+        """Return the mapping from column keys to value dtypes."""
+        return {k: v.dtype for k, v in self._columns.items()}
+
     def sort_values(
         self,
         by: Hashable | list[Hashable],

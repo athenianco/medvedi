@@ -9,6 +9,10 @@ def test_astype_copy(copy):
     new_df = df.astype(float, copy=copy)
     assert new_df["a"].dtype == float
     assert new_df["b"].dtype == float
+    assert new_df.dtype == {
+        "a": float,
+        "b": float,
+    }
     new_df["a"][0] = 0
     assert df["a"][0] == copy
 
