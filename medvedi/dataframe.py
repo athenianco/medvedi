@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from itertools import repeat
 from typing import (
     Any,
+    Collection,
     Hashable,
     Iterable,
     KeysView,
@@ -364,26 +365,30 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         ...  # pragma: no cover
 
     @overload
-    def __getitem__(self, item: list[Hashable]) -> "DataFrame":  # noqa: D105
+    def __getitem__(self, item: Collection[Hashable]) -> "DataFrame":  # noqa: D105
         ...  # pragma: no cover
 
-    def __getitem__(self, item: Hashable | list[Hashable]) -> Union[np.ndarray, "DataFrame"]:
+    def __getitem__(self, item: Hashable | Collection[Hashable]) -> Union[np.ndarray, "DataFrame"]:
         """
         Extract the column values by key. Raise `KeyError` if the column doesn't exist.
 
-        If the item is an array, return the DataFrame with the corresponding columns.
+        If the item is a collection of keys, return the DataFrame with the corresponding columns.
 
         :param item: Column key.
         :return: Column values, zero-copy. The user is welcome to mutate the internals.
         """
-        if isinstance(item, list):
-            item = item.copy()
+        scalar = isinstance(item, Hashable)
+        if scalar and isinstance(item, (tuple, frozenset)) and item not in self._columns:
+            scalar = False
+        if not scalar:
+            assert isinstance(item, Iterable)
+            keys = list(item)
             columns = self._columns
             for i in self._index:
-                if i not in item:
-                    item.append(i)
-            return DataFrame({k: columns[k] for k in item}, index=self._index)
-        return self._columns[item]
+                if i not in keys:
+                    keys.append(i)
+            return DataFrame({k: columns[k] for k in keys}, index=self._index)
+        return self._columns[item]  # type: ignore
 
     def __setitem__(self, key: Hashable, value: Any) -> None:
         """
