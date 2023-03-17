@@ -397,15 +397,17 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
 
         :param key: Column key to delete.
         """
+        if key in self._index:
+            raise ValueError("cannot drop a part of the index, please use set_index()")
         del self._columns[key]
 
     def __contains__(self, item: Hashable) -> bool:
         """Check whether the column key is present."""
         return item in self._columns
 
-    def __iter__(self) -> Iterable[np.ndarray]:
+    def __iter__(self) -> Iterable[Hashable]:
         """Iterate over columns."""
-        return iter(self._columns.values())
+        return iter(self._columns.keys())
 
     def __str__(self) -> str:
         """Support str()."""
