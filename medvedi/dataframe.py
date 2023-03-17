@@ -1,3 +1,4 @@
+from collections import defaultdict
 from dataclasses import dataclass
 from itertools import repeat
 from typing import Any, Hashable, Iterable, Literal, Mapping, Sequence, Union, overload
@@ -401,6 +402,10 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
     def __contains__(self, item: Hashable) -> bool:
         """Check whether the column key is present."""
         return item in self._columns
+
+    def __iter__(self) -> Iterable[np.ndarray]:
+        """Iterate over columns."""
+        return iter(self._columns.values())
 
     def __str__(self) -> str:
         """Support str()."""
@@ -1018,6 +1023,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         *dfs: "DataFrame",
         ignore_index: bool = False,
         copy: bool = False,
+        strict: bool = True,
     ) -> "DataFrame":
         if len(dfs) == 0:
             return cls()
@@ -1029,24 +1035,44 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             return dfs[0].copy()
         index = dfs[0]._index
         columns = dfs[0]._columns.keys()
-        empty = dfs[0].empty
-        concat_columns = {k: [v] if not empty else [] for k, v in dfs[0]._columns.items()}
-        for df in dfs[1:]:
+        column_chunks = defaultdict(list)
+        empty_column_dtypes: dict[Hashable, np.dtype] = {}
+        pos = 0
+        for df in dfs:
             if not isinstance(df, cls):
                 raise TypeError(f"Can only concatenate medvedi.DataFrame-s, got {type(df)}")
-            if df._columns.keys() != columns:
+            if strict and df._columns.keys() != columns:
                 raise ValueError(f"Columns must match: {columns} vs. {df._columns.keys()}")
             if df._index != index and not ignore_index:
                 raise ValueError(f"Indexes must match: {index} vs. {df._index}")
-            if len(df):
+            if df_len := len(df):
+                arange = None if strict else np.arange(pos, pos + df_len)
+                pos += df_len
                 for k, v in df._columns.items():
-                    concat_columns[k].append(v)
+                    column_chunks[k].append((v, arange))
+            else:
+                for k, v in df._columns.items():
+                    empty_column_dtypes.setdefault(k, v.dtype)
+                    column_chunks.setdefault(k, [])
+        concat_columns = {}
+        for key, chunks in column_chunks.items():
+            if not chunks:
+                column = cls._empty_array(pos, empty_column_dtypes[key])
+            else:
+                values = np.concatenate([arr for arr, _ in chunks], casting="unsafe")
+                if strict:
+                    column = values
+                else:
+                    indexes = np.concatenate([i for _, i in chunks])
+                    if len(indexes) == pos:
+                        column = values
+                    else:
+                        column = cls._empty_array(pos, values.dtype)
+                        column[indexes] = values
+            concat_columns[key] = column
         concat_df = cls()
         concat_df._index = index if not ignore_index else ()
-        concat_df._columns = {
-            k: np.concatenate(v, casting="unsafe") if len(v) else dfs[0]._columns[k]
-            for k, v in concat_columns.items()
-        }
+        concat_df._columns = concat_columns
         return concat_df
 
     @classmethod
