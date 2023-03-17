@@ -639,7 +639,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             [self[c] for c in by],
             kind,
             strict=not non_negative_hint,
-            na_position=na_position,
+            na_position=na_position if ascending else "first" if na_position == "last" else "last",
         )
         if not ascending:
             order = order[::-1]

@@ -20,6 +20,16 @@ def test_sort_values_one_descending():
     assert_array_equal(df["a"], [3, 2, 1])
 
 
+@pytest.mark.parametrize("na_position", ["first", "last"])
+def test_sort_values_one_na_position_descending(na_position):
+    df = DataFrame({"a": [1.0, None, 2.0]}, dtype={"a": float})
+    df.sort_values("a", inplace=True, ignore_index=True, ascending=False, na_position=na_position)
+    if na_position == "first":
+        assert_array_equal(df["a"], [np.nan, 2.0, 1.0])
+    else:
+        assert_array_equal(df["a"], [2.0, 1.0, np.nan])
+
+
 def test_sort_values_one_index():
     df = DataFrame({"a": [3, 2, 1]})
     df.sort_values("a", inplace=True, ignore_index=False)
