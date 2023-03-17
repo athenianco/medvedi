@@ -91,3 +91,21 @@ def test_concat_dtypes():
 
 def test_concat_empty():
     assert DataFrame.concat(DataFrame({"a": []}), DataFrame({"a": []})).empty
+
+
+def test_concat_not_strict_not_empty():
+    df = DataFrame({"a": [1, 2, 3]})
+    df = DataFrame.concat(df, DataFrame({"b": np.array(["x", "y"], dtype=object)}), strict=False)
+    assert len(df) == 5
+    assert_array_equal(df["a"], [1, 2, 3, 0, 0])
+    assert_array_equal(df["b"], [None, None, None, "x", "y"])
+
+
+def test_concat_not_strict_empty():
+    df1 = DataFrame({"a": [1, 2, 3]})
+    df2 = DataFrame({"b": np.array([], dtype=object)})
+    for _df1, _df2 in [(df1, df2), (df2, df1)]:
+        df = DataFrame.concat(_df1, _df2, strict=False)
+        assert len(df) == 3
+        assert_array_equal(df["a"], [1, 2, 3])
+        assert_array_equal(df["b"], [None, None, None])

@@ -15,6 +15,7 @@ class PureStaticDataFrameMethods(type):
         *dfs: DataFrame,
         ignore_index: bool = False,
         copy: bool = False,
+        strict: bool = True,
     ) -> DataFrame:
         """
         Merge several DataFrame-s vertically.
@@ -23,9 +24,10 @@ class PureStaticDataFrameMethods(type):
 
         :param ignore_index: Do not update the index. The result index will be a range.
         :param copy: Do not copy data unless have to.
+        :param strict: Require that all the specified dataframes have the same columns.
         :return: Resulting DataFrame of length = sum of concatenated DataFrame lengths.
         """
-        return cls._concat(*dfs, ignore_index=ignore_index, copy=copy)
+        return cls._concat(*dfs, ignore_index=ignore_index, copy=copy, strict=strict)
 
     def join(
         cls,
@@ -51,6 +53,7 @@ class PureStaticDataFrameMethods(type):
         *dfs: DataFrame,
         ignore_index: bool = False,
         copy: bool = False,
+        strict: bool = True,
     ) -> DataFrame:
         raise NotImplementedError
 
