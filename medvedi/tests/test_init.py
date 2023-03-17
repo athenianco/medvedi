@@ -166,3 +166,43 @@ def test_get_columns():
         ),
     )
     assert_frame_equal(df[["a"]], df)
+
+
+def test_init_dict_dtype():
+    df = DataFrame(
+        {
+            "a": [1, 2, 3],
+            "b": ["1", "2", "3"],
+        },
+        dtype={"a": object, "b": "S1"},
+    )
+    assert df["a"].dtype == object
+    assert df["b"].dtype == "S1"
+
+
+def test_init_dict_part_dtype():
+    df = DataFrame(
+        {
+            "a": [1, 2, 3],
+            "b": ["1", "2", "3"],
+        },
+        dtype={"a": object},
+    )
+    assert df["a"].dtype == object
+    assert df["b"].dtype == "U1"
+
+
+def test_init_iterable_dtype():
+    df = DataFrame(
+        [[1, 2, 3], ["1", "2", "3"]],
+        columns=["a", "b"],
+        dtype={"a": object, "b": "S1"},
+    )
+    assert df["a"].dtype == object
+    assert df["b"].dtype == "S1"
+
+
+def test_init_empty_dtype():
+    df = DataFrame(columns=["a", "b"], dtype={"a": int})
+    assert df["a"].dtype == int
+    assert df["b"].dtype == object

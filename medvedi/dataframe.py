@@ -297,6 +297,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         columns: Iterable[Hashable] | None = None,
         index: Any = None,
         copy: bool = False,
+        dtype: Mapping[Hashable, npt.DTypeLike] | None = None,
         check: bool = True,
     ):
         """
@@ -309,17 +310,20 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         :param columns: Override column names. May not be specified if `data` is a mapping.
         :param index: Index column keys or values.
         :param copy: Do not copy any arrays unless have to.
+        :param dtype: Mapping from column names to the desired dtypes.
         :param check: Validate the integrity after constructing the instance.
         """
+        if dtype is None:
+            dtype = {}
         if data is None:
             if columns is None:
                 built_columns = {}
             else:
-                built_columns = {c: np.array([], dtype=object) for c in columns}
+                built_columns = {c: np.array([], dtype=dtype.get(c, object)) for c in columns}
         elif isinstance(data, Mapping):
             if columns is not None:
                 raise ValueError("Either `data` or `columns` must be specified")
-            built_columns = {k: np.array(v, copy=copy) for k, v in data.items()}
+            built_columns = {k: self._asarray(v, dtype.get(k), copy) for k, v in data.items()}
         else:
             if columns is None:
                 columns = repeat(None)
@@ -327,7 +331,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             for i, (arr, name) in enumerate(zip(data, columns)):
                 if name is None:
                     name = str(i)
-                built_columns[name] = np.array(arr, copy=copy)
+                built_columns[name] = self._asarray(arr, dtype.get(name), copy)
         self._columns: dict[Hashable, np.ndarray] = built_columns
         if check:
             self._check_columns(built_columns)
@@ -1267,6 +1271,15 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         if kind == "f" or kind == "m" or kind == "M":
             return np.full(length, None, dtype)
         return np.zeros(length, dtype=dtype)
+
+    @staticmethod
+    def _asarray(value: Sequence | np.ndarray, dtype: npt.DTypeLike, copy: bool) -> np.ndarray:
+        if dtype == object and not isinstance(value, np.ndarray):
+            r = np.empty(len(value), dtype)
+            r[:] = value
+        else:
+            r = np.array(value, dtype, copy=copy)
+        return r
 
     @staticmethod
     def _check_columns(columns: dict[Hashable, np.ndarray]) -> None:
