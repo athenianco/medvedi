@@ -3,6 +3,7 @@ from numpy.testing import assert_array_equal
 import pytest
 
 from medvedi import DataFrame
+from medvedi.testing import assert_frame_equal
 
 
 def test_set_column_errors():
@@ -55,3 +56,8 @@ def test_set_column_existing_scalar():
     df["a"] = 2
     assert_array_equal(df["a"], [2, 2, 2])
     assert df["a"].dtype == object
+
+
+def test_get_column_tuple():
+    df = DataFrame({"a": np.array([0, 1, 2], dtype=object), "b": [5, 6, 7]}, index="b")
+    assert_frame_equal(df[("a",)], df)
