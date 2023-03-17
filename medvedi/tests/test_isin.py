@@ -3,6 +3,7 @@ from numpy.testing import assert_array_equal
 import pytest
 
 from medvedi import DataFrame
+from medvedi.dataframe import _NumpyIterableProxy
 
 
 def test_in_bad_column():
@@ -45,3 +46,14 @@ def test_in_invert():
     assert_array_equal(
         df.isin("a", np.array(["2", "3", "4"], dtype="S1"), invert=True), [True, False, False],
     )
+
+
+def test_in_shoot_in_the_foot():
+    df = DataFrame({"a": [1, 2, 3]})
+    assert_array_equal(df.isin("a", {2, 3, 4}), [False, True, True])
+    assert_array_equal(df.isin("a", {2: 1, 3: 1, 4: 1}), [False, True, True])
+    assert_array_equal(df.isin("a", frozenset({2, 3, 4})), [False, True, True])
+    assert_array_equal(df.isin("a", {2: 1, 3: 1, 4: 1}.keys()), [False, True, True])
+
+    with pytest.raises(AssertionError):
+        _NumpyIterableProxy({0, 1})[0]

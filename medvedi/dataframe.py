@@ -1,7 +1,18 @@
 from collections import defaultdict
 from dataclasses import dataclass
 from itertools import repeat
-from typing import Any, Hashable, Iterable, Literal, Mapping, Sequence, Union, overload
+from typing import (
+    Any,
+    Hashable,
+    Iterable,
+    KeysView,
+    Literal,
+    Mapping,
+    Sequence,
+    Sized,
+    Union,
+    overload,
+)
 
 import numpy as np
 from numpy import typing as npt
@@ -862,7 +873,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
     def isin(
         self,
         column: Hashable,
-        haystack: npt.ArrayLike,
+        haystack: npt.ArrayLike | set | frozenset | dict | KeysView,
         assume_unique: bool = False,
         invert: bool = False,
     ) -> npt.NDArray[np.bool_]:
@@ -877,6 +888,9 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         :return: Boolean mask, same shape as `column`.
         """
         values = self[column]
+        if isinstance(haystack, (set, frozenset, dict, KeysView)):
+            # do not shoot in the foot
+            haystack = _NumpyIterableProxy(haystack)
         haystack = np.asarray(haystack, dtype=values.dtype)
         kind = values.dtype.kind
         if kind == "S" or kind == "U":
@@ -1291,3 +1305,20 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                 raise ValueError(f"all columns must have equal length: {k}")
             if v.ndim != 1:
                 raise ValueError(f"column {k} must be 1-dimensional, got {v.ndim}")
+
+
+class _NumpyIterableProxy(Sequence[Any]):
+    __slots__ = ("obj",)
+
+    def __init__(self, obj):
+        assert isinstance(obj, (Iterable, Sized))
+        self.obj = obj
+
+    def __len__(self):
+        return len(self.obj)
+
+    def __getitem__(self, item):
+        raise AssertionError("numpy shouldn't call this")
+
+    def __iter__(self):
+        return iter(self.obj)
