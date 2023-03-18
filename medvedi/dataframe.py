@@ -1174,12 +1174,27 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                 ]
                 merged_index = merge_to_str(*mapped_indexes)
         _, index_map, inverse_map = np.unique(merged_index, return_index=True, return_inverse=True)
-        leave_mask = repeats = None
+        first_length = len(dfs[0])
+        if len(
+            np.unique(
+                merge_to_str(
+                    inverse_map[first_length:],
+                    np.repeat(
+                        np.arange(len(dfs) - 1),
+                        np.fromiter((len(df) for df in dfs[1:]), int, len(dfs) - 1),
+                    ),
+                )
+                if len(dfs) > 1
+                else inverse_map[first_length:],
+            ),
+        ) < (len(inverse_map) - first_length):
+            raise NotImplementedError  # fallback pairwise
+        _, repeats = np.unique(inverse_map[:first_length], return_counts=True)
+        if (repeats == 1).all():
+            repeats = None
+        leave_mask = None
         if how == "left":
-            leave_mask = index_map < len(dfs[0])
-            _, repeats = np.unique(inverse_map[: len(dfs[0])], return_counts=True)
-            if (repeats == 1).all():
-                repeats = None
+            leave_mask = index_map < first_length
         elif how == "inner":
             encounters = np.zeros(len(index_map), dtype=np.uint8)
             pos = 0
@@ -1188,6 +1203,12 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                 encounters[inverse_map[pos : pos + df_len]] += 1
                 pos += df_len
             leave_mask = encounters == len(dfs)
+            if repeats is not None:
+                augmented_repeats = np.empty(len(index_map), int)
+                first_mask = index_map < first_length
+                augmented_repeats[first_mask] = repeats
+                repeats = augmented_repeats[leave_mask & first_mask]
+                first_length = repeats.sum()
         if leave_mask is not None and not leave_mask.all():
             index_map = index_map[leave_mask]
             inverse_index_map = np.full(len(leave_mask), -1, dtype=int)
@@ -1207,9 +1228,13 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             df_len = len(df)
             values_order = inverse_map[pos : pos + df_len]
             pos += df_len
-            if must_mask := (how != "outer" and (i > 0 or how != "left")):
+            if must_mask := (how != "outer" and (i > 0 or how == "inner")):
                 mask = values_order >= 0
-                values_order = values_order[mask]
+                if i == 0 and repeats is not None:
+                    mask = np.flatnonzero(mask)[np.argsort(values_order[mask], kind="stable")]
+                    values_order = slice(None)
+                else:
+                    values_order = values_order[mask]
             elif must_mask := (repeats is not None):
                 mask = np.argsort(values_order, kind="stable")
                 values_order = slice(None)
@@ -1218,11 +1243,12 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                     continue
                 if suffix is not None:
                     c = str(c) + suffix
-                if i > 0 and how == "left":
+                if i > 0 and repeats is not None:
                     left_added_columns.add(c)
                 if c not in joined_columns:
                     joined_columns[c] = joined_values = cls._empty_array(
-                        len(index_map) if i > 0 or repeats is None else df_len, values.dtype,
+                        len(index_map) if (i > 0 or repeats is None) else first_length,
+                        values.dtype,
                     )
                 else:
                     joined_values = joined_columns[c]
