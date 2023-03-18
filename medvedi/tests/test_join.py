@@ -231,9 +231,50 @@ def test_join_left_dupes():
     assert_array_equal(joined["c"], [1, 2, 0])
 
 
+def test_join_inner_dupes():
+    df1 = DataFrame({"a": [2, 1, 1], "c": [0, 1, 2]}, index="a")
+    df2 = DataFrame({"A": [1], "b": ["x"]}, index="A")
+    joined = DataFrame.join(df1, df2, how="inner")
+    assert joined.index.name == "a"
+    assert_array_equal(joined.index.values, [1, 1])
+    assert_array_equal(joined["b"], ["x", "x"])
+    assert_array_equal(joined["c"], [1, 2])
+
+
 def test_join_outer_left_empty():
     df1 = DataFrame({"a": []}, index="a")
     df2 = DataFrame({"a": [0, 1], "b": [4, 5]}, index="a")
     joined = DataFrame.join(df1, df2, how="outer")
     assert_array_equal(joined["a"], [0, 1])
     assert_array_equal(joined["b"], [4, 5])
+
+
+@pytest.mark.parametrize("how", ["left", "inner"])
+def test_join_total_dupes_two(how):
+    df1 = DataFrame({"a": [2, 1, 1], "c": [0, 1, 2]}, index="a")
+    df2 = DataFrame({"A": [1, 1], "b": ["x", "y"]}, index="A")
+    with pytest.raises(NotImplementedError):
+        joined = DataFrame.join(df1, df2, how=how)
+        assert joined.index.name == "a"  # pragma: no cover
+        assert_array_equal(joined.index.values, [1, 1, 1, 1])  # pragma: no cover
+        assert_array_equal(joined["b"], ["x", "y", "x", "y"])  # pragma: no cover
+        assert_array_equal(joined["c"], [1, 1, 2, 2])  # pragma: no cover
+
+
+@pytest.mark.parametrize("how", ["left", "inner"])
+def test_join_total_dupes_three(how):
+    df1 = DataFrame({"a": [2, 1, 1], "c": [0, 1, 2]}, index="a")
+    df2 = DataFrame({"A": [1, 1], "b": ["x", "y"]}, index="A")
+    df3 = DataFrame({3: [1, 2], "t": [5, 6]}, index=3)
+    with pytest.raises(NotImplementedError):
+        DataFrame.join(df1, df2, df3, how=how)
+
+
+def test_join_inner_dupes_ooo():
+    df1 = DataFrame({"a": [2, 1, 1], "c": [0, 1, 2]}, index="a")
+    df2 = DataFrame({"A": [1, 0], "b": ["x", "y"]}, index="A")
+    joined = DataFrame.join(df1, df2, how="inner")
+    assert joined.index.name == "a"
+    assert_array_equal(joined.index.values, [1, 1])
+    assert_array_equal(joined["b"], ["x", "x"])
+    assert_array_equal(joined["c"], [1, 2])
