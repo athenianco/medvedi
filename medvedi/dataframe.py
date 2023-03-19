@@ -88,19 +88,18 @@ class Index:
         for i, level in enumerate(index):
             values = columns[level]
             if mask is not None:
-                values = values[mask]
-            if getattr(values[1:], op)(values[:-1]).all():
+                indexes = np.flatnonzero(mask)
+            else:
+                indexes = np.arange(len(values) - 1)
+            if getattr(values[indexes + 1], op)(values[indexes]).all():
                 if i == last_level or len(values) == 1:
                     return True
                 if mask is None:
-                    mask = np.ones(len(values), dtype=bool)
-                diff_mask = np.zeros(len(values), dtype=bool)
-                zero_mask = values[1:] == values[:-1]
+                    mask = np.ones(len(values) - 1, dtype=bool)
+                zero_mask = values[indexes + 1] == values[indexes]
                 if not zero_mask.any():
                     return True
-                diff_mask[1:] = zero_mask
-                diff_mask[:-1] |= zero_mask
-                mask[mask] &= diff_mask
+                mask[mask] &= zero_mask
                 continue
             else:
                 return False
