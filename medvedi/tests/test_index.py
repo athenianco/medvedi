@@ -208,6 +208,14 @@ def test_index_is_monotonic_decreasing_3d():
     assert not df.index.is_monotonic_decreasing
 
 
+def test_index_is_monotonic_increasing_2d_two():
+    df = DataFrame(
+        {"a": [0, 1, 1, 2, 3, 3], "b": [50.3, 5.1, 6.1, 0, 2.1, 3.2]},
+        index=("a", "b"),
+    )
+    assert df.index.is_monotonic_increasing
+
+
 def test_index_assert_equal():
     df1 = DataFrame({"a": [0, 1, 2]}, index="a")
     df2 = DataFrame({"a": [0, 1, 2], "b": [5, 6, 7]}, index="a")
