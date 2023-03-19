@@ -490,10 +490,14 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             columns[k] = v[mask_or_indexes]
         return self
 
-    def copy(self) -> "DataFrame":
-        """Produce a deep copy of the DataFrame."""
+    def copy(self, shallow: bool = False) -> "DataFrame":
+        """Produce a deep copy of the DataFrame.
+
+        :param shallow: We copy underlying numpy arrays by default; when `shallow=True`, \
+                        the produced DataFrame clone shares arrays with the origin.
+        """
         df = type(self)()
-        df._columns = {c: v.copy() for c, v in self._columns.items()}
+        df._columns = {c: v if shallow else v.copy() for c, v in self._columns.items()}
         df._index = self._index
         return df
 
