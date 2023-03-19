@@ -165,6 +165,9 @@ def test_index_is_monotonic_increasing_empty():
     df = DataFrame({"a": []}, index="a")
     assert df.index.is_monotonic_increasing
 
+    df = DataFrame({"a": [], "b": []}, index=("a", "b"))
+    assert df.index.is_monotonic_increasing
+
     df = DataFrame({"a": [1]}, index="a")
     assert df.index.is_monotonic_increasing
 
