@@ -81,6 +81,8 @@ class Index:
 
     def _is_monotonic(self, op: str) -> bool:
         """Check whether the index is sorted."""
+        if len(self._parent) <= 1:
+            return True
         index = self._parent._index
         columns = self._parent._columns
         last_level = len(index) - 1
@@ -92,8 +94,8 @@ class Index:
             else:
                 indexes = np.arange(len(values) - 1)
             if getattr(values[indexes + 1], op)(values[indexes]).all():
-                if i == last_level or len(values) == 1:
-                    return True
+                if i == last_level:
+                    break
                 if mask is None:
                     mask = np.ones(len(values) - 1, dtype=bool)
                 zero_mask = values[indexes + 1] == values[indexes]
