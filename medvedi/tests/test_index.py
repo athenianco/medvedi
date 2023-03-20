@@ -243,3 +243,14 @@ def test_index_diff_bad_type():
     df2 = DataFrame({"a": [1, 2, 2, 3]}, index="a")
     with pytest.raises(TypeError):
         df1.index.diff(df2)
+
+
+def test_index_diff_2d_object():
+    df1 = DataFrame(
+        {"a": [0, 1, 1, 4, 2], "b": np.array(["x", "x", "y", "x", "x"], dtype=object)},
+        index=("a", "b"),
+    )
+    df2 = DataFrame(
+        {"a": [1, 2, 2, 3], "B": np.array(["x", "x", "y", "x"], dtype=object)}, index=("a", "B"),
+    )
+    assert_array_equal(df1.index.diff(df2.index), [0, 2, 3])
