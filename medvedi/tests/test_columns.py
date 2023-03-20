@@ -66,6 +66,13 @@ def test_set_column_existing_scalar():
     assert df["a"].dtype == int
 
 
+@pytest.mark.parametrize("dtype", ["S", "U"])
+def test_set_column_string_scalar(dtype):
+    df = DataFrame({"a": np.array(["0", "1", "2"], dtype=dtype)})
+    df["a"] = "test"
+    assert_array_equal(df["a"], np.array(["test"] * 3, dtype=dtype))
+
+
 def test_get_column_tuple():
     df = DataFrame({"a": np.array([0, 1, 2], dtype=object), "b": [5, 6, 7]}, index="b")
     assert_frame_equal(df[("a",)], df)

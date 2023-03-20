@@ -402,6 +402,8 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         if np.isscalar(value) or value is None:
             if key in self._columns:
                 dtype = self._columns[key].dtype
+                if dtype.kind == "S" or dtype.kind == "U":
+                    dtype = f"{dtype.kind}{len(value)}"
             else:
                 dtype = None
             if dtype == object:
