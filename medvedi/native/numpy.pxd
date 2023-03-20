@@ -1,5 +1,5 @@
 from cpython cimport PyObject
-from numpy cimport dtype as npdtype, npy_int64, npy_intp
+from numpy cimport dtype as np_dtype, npy_int64, npy_intp
 
 from medvedi.native.cpython cimport PyTypeObject
 
@@ -33,7 +33,7 @@ cdef extern from "numpy/arrayobject.h":
         int flags,
         PyObject *obj,
     )
-    npdtype PyArray_DescrNew(npdtype)
+    np_dtype PyArray_DescrNew(np_dtype)
 
     void *PyArray_DATA(PyObject *) nogil
     char *PyArray_BYTES(PyObject *) nogil

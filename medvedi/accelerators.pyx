@@ -13,15 +13,20 @@ from libc.stddef cimport wchar_t
 from libc.stdint cimport int32_t, int64_t
 from libc.string cimport memchr, memcpy
 from numpy cimport (
+    NPY_ARRAY_C_CONTIGUOUS,
+    NPY_OBJECT,
     PyArray_DATA,
     PyArray_DESCR,
+    PyArray_DescrFromType,
     PyArray_DIM,
     PyArray_IS_C_CONTIGUOUS,
     PyArray_NDIM,
     PyArray_STRIDE,
     dtype as np_dtype,
+    import_array,
     ndarray,
     npy_bool,
+    npy_intp,
 )
 
 from medvedi.native.cpython cimport (
@@ -37,11 +42,18 @@ from medvedi.native.mi_heap_destroy_stl_allocator cimport (
     mi_unordered_set,
     pair,
 )
-from medvedi.native.numpy cimport PyArray_DescrNew, PyArray_NewFromDescr, PyArray_Type
+from medvedi.native.numpy cimport (
+    PyArray_Descr,
+    PyArray_DescrNew,
+    PyArray_NewFromDescr,
+    PyArray_Type,
+)
 from medvedi.native.optional cimport optional
 from medvedi.native.string_view cimport string_view
 
 import numpy as np
+
+import_array()
 
 
 cdef extern from "wchar.h" nogil:
@@ -341,3 +353,29 @@ cdef void _is_not_null(
     cdef long i
     for i in range(size):
         out_arr[i] = Py_None != (<const PyObject **> (obj_arr + i * stride))[0]
+
+
+def array_of_objects(int length, fill_value) -> ndarray:
+    cdef:
+        ndarray arr
+        np_dtype objdtype = PyArray_DescrNew(PyArray_DescrFromType(NPY_OBJECT))
+        npy_intp nplength = length, i
+        PyObject **data
+        PyObject *obj = <PyObject *> fill_value
+
+    arr = <ndarray> PyArray_NewFromDescr(
+        &PyArray_Type,
+        <PyArray_Descr *> objdtype,
+        1,
+        &nplength,
+        NULL,
+        NULL,
+        NPY_ARRAY_C_CONTIGUOUS,
+        NULL,
+    )
+    Py_INCREF(<PyObject *> objdtype)
+    data = <PyObject **> PyArray_DATA(arr)
+    for i in range(nplength):
+        data[i] = obj
+    obj.ob_refcnt += nplength
+    return arr

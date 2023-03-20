@@ -23,7 +23,7 @@ try:
 except ImportError:  # pragma: no cover
     pa = None  # pragma: no cover
 
-from medvedi.accelerators import in1d_str, is_not_null, is_null, unordered_unique
+from medvedi.accelerators import array_of_objects, in1d_str, is_not_null, is_null, unordered_unique
 from medvedi.io import deserialize_df, serialize_df
 from medvedi.merge_to_str import merge_to_str, mergeable_dtype_kinds
 from medvedi.pure_static import PureStaticDataFrameMethods
@@ -401,9 +401,13 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         """
         if np.isscalar(value) or value is None:
             if key in self._columns:
-                self._columns[key][:] = value
-                return
-            value = np.full(len(self), value)
+                dtype = self._columns[key].dtype
+            else:
+                dtype = None
+            if dtype == object:
+                value = array_of_objects(len(self), value)
+            else:
+                value = np.full(len(self), value, dtype=dtype)
         else:
             value = np.atleast_1d(np.squeeze(np.asarray(value)))
         if value.ndim != 1:
