@@ -172,17 +172,15 @@ class Index:
         """
         if not isinstance(other, Index):
             raise TypeError(f"other must be a medvedi.Index, got {type(other)}")
-        columns = self._parent._columns
-        order_self, merged_self = DataFrame._order([columns[i] for i in self._parent._index])
-        columns = other._parent._columns
-        order_other, merged_other = DataFrame._order([columns[i] for i in other._parent._index])
-        _, first_found = np.unique(
-            np.concatenate([merged_other[order_other], merged_self[order_self]]),
-            return_index=True,
-        )
-        return np.sort(
-            order_self[first_found[first_found >= len(merged_other)] - len(merged_other)],
-        )
+        columns_self = self._parent._columns
+        columns_other = other._parent._columns
+        columns_joint = [
+            np.concatenate([columns_other[i_other], columns_self[i_self]], casting="unsafe")
+            for i_self, i_other in zip(self._parent._index, other._parent._index)
+        ]
+        _, merged = DataFrame._order(columns_joint, kind="none")
+        _, first_found = np.unique(merged, return_index=True)
+        return first_found[first_found >= len(other)] - len(other)
 
 
 @dataclass(frozen=True, slots=True)
@@ -403,6 +401,8 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             if key in self._columns:
                 dtype = self._columns[key].dtype
                 if dtype.kind == "S" or dtype.kind == "U":
+                    if not isinstance(value, (str, bytes)):
+                        raise ValueError(f"Invalid scalar type: {type(value)}")
                     dtype = f"{dtype.kind}{len(value)}"
             else:
                 dtype = None
@@ -1279,11 +1279,13 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
     @staticmethod
     def _order(
         by: Sequence[np.ndarray],
-        kind: Literal["quicksort", "stable"] | None = None,
+        kind: Literal["quicksort", "stable", "none"] | None = None,
         strict: bool = False,
         na_position: Literal["first", "last"] = "last",
     ) -> tuple[npt.NDArray[np.int_], np.ndarray]:
         if len(by) == 1:
+            if kind == "none":
+                return np.array([], int), by[0]
             result = np.argsort(by[0], kind=kind)
             if na_position == "first":
                 if (na_count := (by[0] != by[0]).sum()) > 0:
@@ -1291,7 +1293,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             return result, by[0]
         if not strict and not ({c.dtype.kind for c in by} - mergeable_dtype_kinds):
             merged = merge_to_str(*by)
-            return np.argsort(merged, kind=kind), merged
+            return np.argsort(merged, kind=kind) if kind != "none" else np.array([], int), merged
         mapped_bys = []
         for c in by:
             unique_values, inverse_indexes = np.unique(c, return_inverse=True)
@@ -1304,7 +1306,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                 inverse_indexes[inverse_indexes == len(unique_values)] = 0
             mapped_bys.append(inverse_indexes)
         merged = merge_to_str(*mapped_bys)
-        return np.argsort(merged, kind=kind), merged
+        return np.argsort(merged, kind=kind) if kind != "none" else np.array([], int), merged
 
     def _unique(
         self,
