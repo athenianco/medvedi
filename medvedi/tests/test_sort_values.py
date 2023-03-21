@@ -31,18 +31,20 @@ def test_sort_values_one_na_position_descending(na_position):
 
 
 def test_sort_values_one_index():
-    df = DataFrame({"a": [3, 2, 1]})
+    df = DataFrame({"a": [3, 2, 1], "i": [0, 1, 2]}, index="i")
     df.sort_values("a", inplace=True, ignore_index=False)
-    assert df.index.names == ("_index0",)
+    assert df.index.names == ("i",)
     assert_array_equal(df["a"], [1, 2, 3])
     assert_array_equal(df.index.get_level_values(0), [2, 1, 0])
 
 
 def test_sort_values_one_copy():
-    df = DataFrame({"a": [3, 2, 1]})
+    df = DataFrame({"a": [3, 2, 1]}, index="a")
     x = df.sort_values("a", inplace=False, ignore_index=True)
     assert_array_equal(df["a"], [3, 2, 1])
     assert_array_equal(x["a"], [1, 2, 3])
+    assert df.index.names == ("a",)
+    assert x.index.names == ()
 
 
 def test_sort_values_mergeable():
