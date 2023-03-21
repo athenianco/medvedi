@@ -630,7 +630,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         :param kind: Sorting algorithm.
         :param na_position: Where we must place the nulls (NaNs, NaTs, etc.).
         :param ignore_index: Value indicating whether the index in the resulting DataFrame will \
-                             be reset.
+                             be empty.
         :param non_negative_hint: The column values referenced by `by` are all non-negative. \
                                   This enables low-level optimization in multi-column mode.
         :return: Sorted DataFrame.
@@ -641,10 +641,8 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             raise ValueError("must specify at least one column")
 
         df = self if inplace else self.copy()
-
-        if not ignore_index and len(df._index) == 0:
-            df["_index0"] = np.arange(len(self), dtype=int)
-            df._index = ("_index0",)
+        if ignore_index:
+            df._index = ()
 
         order, _ = self._order(
             [self[c] for c in by],
@@ -657,9 +655,6 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
 
         for k, v in df._columns.items():
             df._columns[k] = v[order]
-
-        if ignore_index:
-            df._index = ()
 
         return df
 
