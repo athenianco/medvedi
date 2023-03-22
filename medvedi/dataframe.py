@@ -1307,14 +1307,17 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         self,
         subset: Hashable | Iterable[Hashable] | None,
         keep: Literal["first", "last"],
-    ):
+    ) -> npt.NDArray[np.int_]:
         if subset is None:
             subset = self._columns.keys()
+            if not subset:
+                return np.array([], int)
         elif isinstance(subset, Hashable) and subset in self._columns:
             subset = (subset,)
         if not isinstance(subset, Iterable):
             raise TypeError(f"subset of columns is not recognized: {type(subset)}")
-        by = [self[c] for c in subset]
+        if not (by := [self[c] for c in subset]):
+            raise ValueError(f"subset of columns cannot be empty, got {subset}")
         order, merged = self._order(by, "stable")
         if keep == "last":
             order = order[::-1]
