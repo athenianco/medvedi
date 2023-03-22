@@ -53,6 +53,8 @@ def test_drop_duplicates_bad_column():
         df.duplicated("c")
     with pytest.raises(TypeError):
         df.drop_duplicates(object())
+    with pytest.raises(ValueError):
+        df.duplicated([])
 
 
 def test_drop_duplicates_one_index():
@@ -77,3 +79,15 @@ def test_drop_duplicates_two(container):
 def test_drop_duplicates_noop():
     df = DataFrame({"a": [1, 2, 3], "b": [0, 10, 3]}, index="a")
     assert_frame_equal(df.drop_duplicates("a"), df)
+
+
+def test_drop_duplicates_empty():
+    DataFrame().drop_duplicates()
+
+
+def test_drop_duplicates_all():
+    df = DataFrame({"a": [1, 2, 2], "b": [0, 3, 4]}, index="a")
+    assert_frame_equal(df.drop_duplicates(), df)
+
+    df["b"][-1] = 3
+    assert_frame_equal(df.drop_duplicates(), df.take([0, 1]))
