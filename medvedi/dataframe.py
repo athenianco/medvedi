@@ -126,9 +126,10 @@ class Index:
     @property
     def values(self) -> np.ndarray:
         """Return the only index level if the index is 1-D."""
-        if len(self._parent._index) != 1:
+        if (nlevels := len(self._parent._index)) != 1:
             raise AttributeError(
-                "Index.values require a single index level, use get_level_values() instead",
+                "Index.values require a single index level but got "
+                f"{nlevels} {self._parent._index}, use get_level_values(0) instead",
             )
         return self._parent[self._parent._index[0]]
 
