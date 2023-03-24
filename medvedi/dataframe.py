@@ -44,7 +44,9 @@ class Index:
 
     def __str__(self) -> str:
         """Support str()."""
-        return "(" + ", ".join(map(str, self.names)) + ")"
+        return (
+            "(" + ", ".join(map(str, self.names)) + f"), {'' if self.is_unique else 'not '}unique"
+        )
 
     def __sentry_repr__(self):
         """Support Sentry."""
@@ -63,9 +65,9 @@ class Index:
     @property
     def is_unique(self) -> bool:
         """Check whether the index doesn't contain duplicates."""
-        columns = self._parent._columns
-        if not columns:
+        if not self._parent._index:
             return True
+        columns = self._parent._columns
         order, merged = DataFrame._order([columns[c] for c in self._parent._index])
         return len(np.unique(merged[order])) == len(merged)
 
@@ -351,7 +353,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         self._index: tuple[Hashable, ...] = ()
         if isinstance(index, Index):
             index = index.levels()
-        if index is not None and index != ():
+        if index is not None and (not isinstance(index, tuple) or index != ()):
             self.set_index(index, inplace=True)
 
     def __len__(self) -> int:
@@ -441,7 +443,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         """Support str()."""
         # fmt: off
         return (
-            f"DataFrame with {len(self._columns)} columns, {len(self)} rows\n"
+            f"DataFrame with {len(self._columns)} columns, {len(self)} rows\nindex: {self.index}\n"
             +
             "\n".join(f"{c}: {v.dtype}" for c, v in self._columns.items())
         )
@@ -461,6 +463,11 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
         if not self._columns:
             return True
         return len(next(iter(self._columns.values()))) == 0
+
+    @property
+    def shape(self) -> tuple[int, int]:
+        """Return the dimensions of the DataFrame."""
+        return len(self), len(self._columns)
 
     def iterrows(self, *columns: Hashable) -> zip:
         """

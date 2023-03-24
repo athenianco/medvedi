@@ -19,7 +19,7 @@ def test_set_index_name_existing():
     df = DataFrame({"a": [0, 1, 2]})
     new_df = df.set_index("a")
     assert new_df.index.names == ("a",)
-    assert str(new_df.index) == "(a)"
+    assert str(new_df.index) == "(a), unique"
     assert new_df.index.__sentry_repr__() == str(new_df.index)
     assert new_df is not df
     with pytest.raises(AssertionError):
