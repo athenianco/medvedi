@@ -18,6 +18,7 @@ def test_init_dict_smoke():
     assert df._index == ()
     assert df.columns == ("a", "b")
     assert len(str(df)) > 0
+    assert df.shape == (3, 2)
     assert len(repr(df)) > 0
     assert len(df.__sentry_repr__()) > 0
 
