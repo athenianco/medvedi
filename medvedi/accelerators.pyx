@@ -11,7 +11,7 @@ from cpython cimport PyObject
 from cython.operator cimport dereference as deref
 from libc.stddef cimport wchar_t
 from libc.stdint cimport int32_t, int64_t
-from libc.string cimport memchr, memcpy
+from libc.string cimport memcpy
 from numpy cimport (
     NPY_ARRAY_C_CONTIGUOUS,
     NPY_OBJECT,
@@ -56,8 +56,9 @@ import numpy as np
 import_array()
 
 
-cdef extern from "wchar.h" nogil:
-    wchar_t *wmemchr(const wchar_t *, wchar_t, size_t)
+cdef extern from "memnrchr.h" nogil:
+    char *memnrchr(const char *, char, size_t)
+    wchar_t *wmemnrchr(const wchar_t *, wchar_t, size_t)
 
 
 def unordered_unique(ndarray arr not None) -> np.ndarray:
@@ -191,32 +192,33 @@ cdef ndarray _unordered_unique_int(ndarray arr, np_dtype dtype, varint _):
 def in1d_str(
     ndarray trial not None,
     ndarray dictionary not None,
-    bint skip_leading_zeros = False,
     bint verbatim = False,
+    bint invert = False,
 ) -> np.ndarray:
     cdef:
         np_dtype dtype_trial = <np_dtype>PyArray_DESCR(trial)
         np_dtype dtype_dict = <np_dtype>PyArray_DESCR(dictionary)
+        char kind = dtype_trial.kind
     assert PyArray_NDIM(trial) == 1
     assert PyArray_NDIM(dictionary) == 1
-    assert dtype_trial.kind == b"S" or dtype_trial.kind == b"U"
-    assert dtype_trial.kind == dtype_dict.kind
-    return _in1d_str(trial, dictionary, dtype_trial.kind == b"S", skip_leading_zeros, verbatim)
+    assert kind == b"S" or kind == b"U"
+    assert kind == dtype_dict.kind
+    return _in1d_str(trial, dictionary, kind == b"S", verbatim, invert)
 
 
 cdef ndarray _in1d_str(
     ndarray trial,
     ndarray dictionary,
     bint is_char,
-    int skip_leading_zeros,
-    int verbatim,
+    bint verbatim,
+    bint invert,
 ):
     cdef:
         char *data_trial = <char *>PyArray_DATA(trial)
         char *data_dictionary = <char *> PyArray_DATA(dictionary)
         char *output
         char *s
-        char *nullptr
+        char *tail
         np_dtype dtype_trial = <np_dtype>PyArray_DESCR(trial)
         np_dtype dtype_dict = <np_dtype>PyArray_DESCR(dictionary)
         int64_t i, size, \
@@ -232,35 +234,19 @@ cdef ndarray _in1d_str(
         alloc.emplace()
         hashtable.emplace(deref(alloc))
         deref(hashtable).reserve(length * 4)
-        if is_char:
-            for i in range(length):
-                s = data_dictionary + i * stride
-                if verbatim:
-                    size = itemsize
+        for i in range(length):
+            s = data_dictionary + i * stride
+            if verbatim:
+                size = itemsize
+            else:
+                if is_char:
+                    tail = <char *> memnrchr(s, 0, itemsize)
                 else:
-                    nullptr = s
-                    if skip_leading_zeros:
-                        while nullptr < (s + itemsize) and nullptr[0] == 0:
-                            nullptr += 1
-                    nullptr = <char *> memchr(nullptr, 0, itemsize + (s - nullptr))
-                    if nullptr:
-                        size = nullptr - s
-                    else:
-                        size = itemsize
-                deref(hashtable).emplace(s, size)
-        else:
-            for i in range(length):
-                s = data_dictionary + i * stride
-                if verbatim:
-                    size = itemsize
-                else:
-                    nullptr = <char *> wmemchr(<wchar_t *>s, 0, itemsize >> 2)
-                    if nullptr:
-                        size = nullptr - s
-                    else:
-                        size = itemsize
-                deref(hashtable).emplace(s, size)
-
+                    tail = <char *> wmemnrchr(<wchar_t *> s, 0, itemsize >> 2)
+                if tail == NULL:
+                    tail = s
+                size = tail - s
+            deref(hashtable).emplace(s, size)
         itemsize = dtype_trial.itemsize
         length = PyArray_DIM(trial, 0)
         stride = PyArray_STRIDE(trial, 0)
@@ -270,33 +256,21 @@ cdef ndarray _in1d_str(
     with nogil:
         output = <char *>PyArray_DATA(result)
         end = deref(hashtable).end()
-        if is_char:
-            for i in range(length):
-                s = data_trial + i * stride
-                if verbatim:
-                    size = itemsize
+        for i in range(length):
+            s = data_trial + i * stride
+            if verbatim:
+                size = itemsize
+            else:
+                if is_char:
+                    tail = <char *> memnrchr(s, 0, itemsize)
                 else:
-                    nullptr = s
-                    if skip_leading_zeros:
-                        while nullptr < (s + itemsize) and nullptr[0] == 0:
-                            nullptr += 1
-                    nullptr = <char *> memchr(nullptr, 0, itemsize + (s - nullptr))
-                    if nullptr:
-                        size = nullptr - s
-                    else:
-                        size = itemsize
-                output[i] = deref(hashtable).find(string_view(s, size)) != end
-        else:
-            for i in range(length):
-                s = data_trial + i * stride
-                if verbatim:
-                    size = itemsize
-                else:
-                    nullptr = <char *> wmemchr(<wchar_t *> s, 0, itemsize >> 2)
-                    if nullptr:
-                        size = nullptr - s
-                    else:
-                        size = itemsize
+                    tail = <char *> wmemnrchr(<wchar_t *> s, 0, itemsize >> 2)
+                if tail == NULL:
+                    tail = s
+                size = tail - s
+            if invert:
+                output[i] = deref(hashtable).find(string_view(s, size)) == end
+            else:
                 output[i] = deref(hashtable).find(string_view(s, size)) != end
     return result
 
