@@ -75,6 +75,18 @@ def test_set_column_string_scalar(dtype):
         df["a"] = 45
 
 
+def test_set_column_object_length_zero():
+    df = DataFrame({"a": []})
+    df["b"] = []
+    assert df["b"].dtype == float
+    assert df["b"].shape == (0,)
+
+    for col in ("b", "c"):
+        df[col] = np.array([], dtype=object)
+        assert df[col].dtype == object
+        assert df[col].shape == (0,)
+
+
 def test_set_column_object_length_one():
     df = DataFrame({"a": [0]})
     df["b"] = [np.array(["x", "y"], dtype=object)]
