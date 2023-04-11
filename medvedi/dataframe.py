@@ -414,7 +414,7 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
             else:
                 value = np.full(len(self), value, dtype=dtype)
         elif not isinstance(value, np.ndarray):
-            value = np.asarray(value)
+            value = np.atleast_1d(np.asarray(value))
             if value.ndim > 1:
                 flat = np.empty(len(value), dtype=object)
                 flat[:] = list(value)
