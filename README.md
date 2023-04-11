@@ -9,13 +9,15 @@ Design goals:
 - Favor performance over nice syntax features. Sacrifice fool-proof for efficient zero-copy operations.
 - Ensure ideal micro-performance and optimize for moderate data sizes (megabytes).
 - The use-case is API server code that you write once and execute many times.
-- Try to stay compatible with the Pandas interface.
+- Try to stay compatible with the Pandas interface. There is no `Series`, however.
 - Rely on numpy.
+- Friends with Arrow.
 - Frequently release GIL and depend on native extensions doing unsafe things.
 - Test only CPython and Linux.
 - Support only x86-64 CPUs with AVX2.
 - Support only Python 3.10+.
 - 100% test coverage.
-- Be opinionated. Reject extra features.
 
-Unless you know what you miss, you should be better with regular Pandas.
+Otherwise, you should be way better with regular Pandas.
+
+Medvedi is currently heavily used in production of [Athenian](https://athenian.co).
