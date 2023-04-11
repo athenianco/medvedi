@@ -75,6 +75,26 @@ def test_set_column_string_scalar(dtype):
         df["a"] = 45
 
 
+def test_set_column_object_length_one():
+    df = DataFrame({"a": [0]})
+    df["b"] = [np.array(["x", "y"], dtype=object)]
+    assert df["b"].dtype == object
+    assert df["b"].shape == (1,)
+    assert_array_equal(df["b"][0], np.array(["x", "y"], dtype=object))
+
+    with pytest.raises(ValueError):
+        df["c"] = [np.array(["x", "y"], dtype=object)] * 2
+
+
+def test_set_column_object_length_two():
+    df = DataFrame({"a": [0, 1]})
+    df["b"] = [np.array(["x", "y", "z"], dtype=object)] * 2
+    assert df["b"].dtype == object
+    assert df["b"].shape == (2,)
+    for i in range(2):
+        assert_array_equal(df["b"][i], np.array(["x", "y", "z"], dtype=object))
+
+
 def test_get_column_tuple():
     df = DataFrame({"a": np.array([0, 1, 2], dtype=object), "b": [5, 6, 7]}, index="b")
     assert_frame_equal(df[("a",)], df)

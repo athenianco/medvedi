@@ -83,12 +83,18 @@ jobs:
       run: make mimalloc
     - name: pip
       run: |
+        set -x
         python3 -m pip install --user -r requirements.txt  -r requirements-test.txt --no-warn-script-location
         echo "$HOME/.local/bin" >> $GITHUB_PATH
+        if [ ! -e "$HOME/.local/bin/pytest" ]; then
+          python3 -m pip uninstall pytest
+          python3 -m pip install --user -r requirements-test.txt
+        fi
         python3 -m pip install --user --no-deps -e .
     - name: test
       run: |
-        set +x
+        set -x
+        ls "$HOME/.local/bin"
         ls medvedi
         PYTEST_WORKERS=2 PYTEST_EXTRA="--cov-report=xml --cov medvedi" make test
     - uses: codecov/codecov-action@v1

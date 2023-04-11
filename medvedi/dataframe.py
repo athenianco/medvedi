@@ -413,8 +413,12 @@ class DataFrame(metaclass=PureStaticDataFrameMethods):
                 value = array_of_objects(len(self), value)
             else:
                 value = np.full(len(self), value, dtype=dtype)
-        else:
-            value = np.atleast_1d(np.squeeze(np.asarray(value)))
+        elif not isinstance(value, np.ndarray):
+            value = np.asarray(value)
+            if value.ndim > 1:
+                flat = np.empty(len(value), dtype=object)
+                flat[:] = list(value)
+                value = flat
         if value.ndim != 1:
             raise ValueError(f"numpy array must be one-dimensional, got shape {value.shape}")
         if len(self) != len(value) and self._columns:
