@@ -52,11 +52,10 @@ setup(
     ext_modules=ext_modules,
     include_dirs=[np.get_include(), str(code_root)],
     keywords=[],
-    install_requires=["numpy>=1.23,<1.24"],
+    install_requires=["numpy>=1.23,<2.0", "pyarrow>=14.0.0"],
     extras_require={
         "arrow": ["pyarrow"],
     },
-    tests_require=[],  # see requirements-test.txt
     package_data={
         "": ["*.md"],
         "medvedi": ["../requirements.txt", "libmimalloc.so*", "mimalloc.h", "*.pyx"],
@@ -66,5 +65,6 @@ setup(
         "Development Status :: 3 - Alpha",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
     ],
 )

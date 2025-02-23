@@ -59,7 +59,7 @@ jobs:
       cancel-in-progress: true
     strategy:
       matrix:
-        python-version: ["3.10", "3.11"]
+        python-version: ["3.10", "3.11", "3.12"]
       fail-fast: false
     steps:
     - name: actions/checkout
@@ -72,7 +72,7 @@ jobs:
       with:
         path: ${{ env.PIP_CACHE }}
         key: ubuntu-22.04-pip-test-${{ matrix.python-version }}-${{ hashFiles('requirements.txt', 'requirements-test.txt') }}
-        restore-keys: ubuntu-22.04-pip-test-
+        restore-keys: ubuntu-22.04-pip-test-${{ matrix.python-version }}-
     - name: actions/cache
       uses: actions/cache@v3.2.5
       with:
@@ -84,10 +84,11 @@ jobs:
     - name: pip
       run: |
         set -x
-        ls "$HOME/.local/bin"
+        ls "$HOME/.local/bin" || true
         [ ! -f "$HOME/.local/bin/pytest" ] && rm -rf "$HOME/.local/lib/python3.*/site-packages/*"
         python3 -m pip install --user -r requirements.txt  -r requirements-test.txt --no-warn-script-location
         echo "$HOME/.local/bin" >> $GITHUB_PATH
+        python3 -m pip uninstall -y medvedi || true
         python3 -m pip install --user --no-deps -e .
     - name: test
       run: |
@@ -108,7 +109,7 @@ jobs:
       uses: actions/checkout@v3
     - uses: actions/setup-python@v2
       with:
-        python-version: 3.11
+        python-version: 3.12
     - name: install build
       run: python3 -m pip install --user build twine auditwheel
     - name: actions/cache

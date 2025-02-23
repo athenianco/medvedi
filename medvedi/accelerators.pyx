@@ -296,7 +296,7 @@ cdef void _is_null_vec(
     const long stride,
     const long size,
     npy_bool *out_arr,
-) nogil:
+) noexcept nogil:
     cdef long i
     for i in range(size):
         out_arr[i] = Py_None == (<const PyObject **> (obj_arr + i * stride))[0]
@@ -323,7 +323,7 @@ cdef void _is_not_null(
     const long stride,
     const long size,
     npy_bool *out_arr,
-) nogil:
+) noexcept nogil:
     cdef long i
     for i in range(size):
         out_arr[i] = Py_None != (<const PyObject **> (obj_arr + i * stride))[0]
