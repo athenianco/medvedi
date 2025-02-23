@@ -415,7 +415,7 @@ cdef void _serialize_object_column(
     PyObject *column,
     char *output,
     ColumnMeasurement *measurement,
-) nogil:
+) noexcept nogil:
     cdef:
         npy_intp rows, stride_x, x, i
         PyObject **data = <PyObject **> PyArray_BYTES(column)
@@ -490,7 +490,7 @@ cdef void _serialize_object_column(
             bookmark[-1] = output - <char *>bookmark
 
 
-cdef inline void _write_str(PyObject *obj, char **output) nogil:
+cdef inline void _write_str(PyObject *obj, char **output) noexcept nogil:
     cdef:
         Py_ssize_t length
         uint32_t size

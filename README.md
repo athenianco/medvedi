@@ -20,4 +20,4 @@ Design goals:
 
 Otherwise, you should be way better with regular Pandas.
 
-Medvedi is currently heavily used in production of [Athenian](https://athenian.co).
+Medvedi used to be heavily used in production at [Athenian](https://athenian.co).
